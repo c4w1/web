@@ -1,5 +1,6 @@
 ---
 name: Knox County Data Library
+place_name: Knoxville
 slug: knox-county
 description: Curated open data and educational data resources for Knox County, Tennessee.
 state_code: TN

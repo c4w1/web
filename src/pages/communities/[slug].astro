@@ -18,10 +18,10 @@ interface Props {
 const { community } = Astro.props;
 const data = community.data;
 
-const allDatasets = await getCollection('datasets');
-const communityDatasets = allDatasets.filter(
-  (ds) => ds.data.community === data.slug
-);
+// Community libraries are filtered views of the main catalog; there are no
+// community-specific dataset records.
+const allResources = await getCollection('master-library');
+const communityDatasets = allResources.filter((entry) => entry.data.tags.includes(data.slug));
 
 const pageTitle = `Welcome to ${data.name}`;
 const pageDescription = data.description || `Community data library for ${data.name}`;
@@ -156,12 +156,12 @@ const pageDescription = data.description || `Community data library for ${data.n
       {communityDatasets.length > 0 ? (
         <div class="datasets-grid">
           {communityDatasets.map((ds) => (
-            <article class="dataset-card" data-audience={JSON.stringify(ds.data.audience)}>
+            <article class="dataset-card">
               <div class="dataset-header">
                 <h3>{ds.data.title}</h3>
-                {ds.data.source_url && (
+                {ds.data.url && (
                   <a
-                    href={ds.data.source_url}
+                    href={ds.data.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="source-link"
@@ -170,15 +170,7 @@ const pageDescription = data.description || `Community data library for ${data.n
                   </a>
                 )}
               </div>
-              {ds.data.description && <p class="dataset-desc">{ds.data.description}</p>}
-              <div class="audience-tags">
-                <span class="tag-label">Target Audience:</span>
-                {ds.data.audience.map((aud) => (
-                  <span class={`tag-chip tag-${aud}`}>
-                    {aud === 'community_member' ? 'Community Member' : aud.charAt(0).toUpperCase() + aud.slice(1)}
-                  </span>
-                ))}
-              </div>
+              <p class="dataset-desc">{ds.data.description}</p>
             </article>
           ))}
         </div>

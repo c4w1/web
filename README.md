@@ -38,7 +38,9 @@ Contribution guidelines are in [data/geo/README.md](data/geo/README.md).
 
 ## Decap CMS Setup & Netlify Configuration
 
-Decap CMS is available at `/admin` (or `/web/admin/` when served with base path) to allow community librarians to author and manage community profiles and datasets.
+Decap CMS is available at `/admin` (or `/web/admin/` when served with base path) so community librarians can maintain their **community configuration**: library name, place name, slug, and geographic identifiers (county FIPS is the main filter).
+
+Decap does **not** manage datasets. The dataset catalog comes from the backend pipeline (`npm run sync:catalog` generates `src/content/master-library/datasets/` during `prebuild`), and each community library is a filtered view of that catalog. New datasets go through the main site's **Suggest a Data Resource** form (`/submit`).
 
 To enable the CMS on a Netlify-hosted deployment using `git-gateway`:
 
