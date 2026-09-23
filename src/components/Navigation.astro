@@ -5,7 +5,7 @@ const currentPath = Astro.url.pathname;
 
 const homeHref = withBasePath('/');
 const catalogHref = withBasePath('/complete-catalog');
-const communityHref = withBasePath('/community-library');
+const exampleCommunityHref = withBasePath('/communities/knox-county/');
 const mapHref = withBasePath('/maps');
 const dataResourcesHref = withBasePath('/data-resources');
 const submitHref = withBasePath('/submit');
@@ -18,7 +18,7 @@ const navItems = [
 
 const navItemsAfter = [
   { href: mapHref, label: 'Interactive Map' },
-  { href: communityHref, label: 'Example Community Library', external: true },
+  { href: exampleCommunityHref, label: 'Example Community Library', external: true },
 ];
 
 const dataResourcesItems = [

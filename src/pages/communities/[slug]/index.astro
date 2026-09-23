@@ -1,0 +1,218 @@
+---
+import CommunityLayout from '@layouts/CommunityLayout.astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { withBasePath } from '@lib/paths';
+import { AUDIENCE_LABELS, AUDIENCE_ROLES, communityDisplay } from '@lib/data/communityFilter';
+
+export async function getStaticPaths() {
+  const communities = await getCollection('communities');
+  return communities.map((community) => ({
+    params: { slug: community.data.slug },
+    props: { community },
+  }));
+}
+
+interface Props {
+  community: CollectionEntry<'communities'>;
+}
+
+const { community } = Astro.props;
+const data = community.data;
+const { libraryTitle, welcomeHeading, placeName } = communityDisplay(data);
+const base = `/communities/${data.slug}`;
+const catalogHref = withBasePath(`${base}/catalog/`);
+const location = [data.county, data.state_code].filter(Boolean).join(', ');
+
+const roleDescriptions = {
+  teacher: 'Topical and pedagogical tags to help plan lessons with local data.',
+  student: 'A student-friendly selection of datasets for projects and exploration.',
+  community: 'Topical tags for exploring data about where you live.',
+} as const;
+---
+
+<CommunityLayout
+  title="Home"
+  description={data.description ??
+    `${libraryTitle}: local data for teachers, students, and community members.`}
+  communityName={libraryTitle}
+  communityLocation={location || undefined}
+  communityBase={base}
+>
+  <section class="landing">
+    <header class="landing-header">
+      {location && <p class="kicker">{location}</p>}
+      <h1>{welcomeHeading}</h1>
+      <p class="intro">
+        {
+          data.description ??
+            `Open data about ${placeName}, selected from the Community Data Libraries catalog.`
+        }
+      </p>
+    </header>
+
+    <section class="roles" aria-labelledby="roles-heading">
+      <h2 id="roles-heading">How will you use the library?</h2>
+      <div class="role-grid">
+        {
+          AUDIENCE_ROLES.map((role) => (
+            <a
+              href={`${catalogHref}?audience=${role}`}
+              class={`role-card role-${role}`}
+              data-audience={role}
+            >
+              <span class="role-name">{AUDIENCE_LABELS[role]}</span>
+              <span class="role-desc">{roleDescriptions[role]}</span>
+              <span class="role-cta">Open the catalog →</span>
+            </a>
+          ))
+        }
+      </div>
+      <p class="role-note">
+        Your choice only adjusts which datasets and tags are shown. No sign-in is needed.
+      </p>
+    </section>
+  </section>
+
+  <script>
+    import { saveAudience } from '../../../lib/client/audience';
+    import { normalizeAudience } from '../../../lib/data/communityFilter';
+
+    // The link already carries ?audience=; saving here also covers the case
+    // where the visitor later returns to the catalog through the nav.
+    document.querySelectorAll<HTMLAnchorElement>('.role-card[data-audience]').forEach((card) => {
+      card.addEventListener('click', () => {
+        const role = normalizeAudience(card.dataset.audience);
+        if (role) {
+          saveAudience(role);
+          document.dispatchEvent(
+            new CustomEvent('cdl:audience-change', { detail: { audience: role } })
+          );
+        }
+      });
+    });
+  </script>
+
+  <style>
+    .landing {
+      display: grid;
+      gap: var(--space-12);
+    }
+
+    .landing-header {
+      display: grid;
+      gap: var(--space-4);
+      max-width: 70ch;
+    }
+
+    .kicker {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-secondary);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      line-height: 1.05;
+    }
+
+    .intro {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      color: var(--color-text-muted);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .roles {
+      display: grid;
+      gap: var(--space-5);
+    }
+
+    .roles h2 {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+
+    @media (min-width: 900px) {
+      .role-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .role-card {
+      display: grid;
+      gap: var(--space-2);
+      align-content: start;
+      padding: var(--space-6);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--color-surface);
+      color: var(--color-text);
+      text-decoration: none;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+    }
+
+    .role-card:hover,
+    .role-card:focus-visible {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      text-decoration: none;
+    }
+
+    .role-teacher:hover,
+    .role-teacher:focus-visible {
+      border-color: var(--color-primary);
+      background: var(--color-primary-glow);
+    }
+
+    .role-student:hover,
+    .role-student:focus-visible {
+      border-color: var(--color-secondary);
+      background: var(--color-secondary-glow);
+    }
+
+    .role-community:hover,
+    .role-community:focus-visible {
+      border-color: var(--color-accent);
+      background: var(--color-accent-glow);
+    }
+
+    .role-name {
+      font-family: var(--font-display);
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+    }
+
+    .role-desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .role-cta {
+      margin-top: var(--space-2);
+      font-size: var(--font-size-sm);
+      font-weight: 700;
+      color: var(--color-text-muted);
+    }
+
+    .role-note {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-dim);
+    }
+  </style>
+</CommunityLayout>

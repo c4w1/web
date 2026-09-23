@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   canAudienceAccess,
+  communityDisplay,
   communityGeoKeys,
   matchesCommunity,
   normalizeAudience,
@@ -128,4 +129,23 @@ test('topicalTags falls back to non-geographic tags when themes are empty', () =
   const e = entry({ dataThemes: [], tags: ['knox-county', 'education', 'fips-47093'] });
   assert.deepEqual(topicalTags(e, knox), ['education']);
   assert.deepEqual(topicalTags(entry(), knox), ['education']);
+});
+
+test('communityDisplay derives heading and library title from place_name', () => {
+  assert.deepEqual(
+    communityDisplay({ name: 'Knox County Data Library', place_name: 'Knoxville' }),
+    {
+      placeName: 'Knoxville',
+      libraryTitle: 'Knoxville Community Data Library',
+      welcomeHeading: 'Welcome to Knoxville',
+    }
+  );
+});
+
+test('communityDisplay falls back to the library name without place_name', () => {
+  assert.deepEqual(communityDisplay({ name: 'Oak Ridge Data Library' }), {
+    placeName: 'Oak Ridge Data Library',
+    libraryTitle: 'Oak Ridge Data Library',
+    welcomeHeading: 'Welcome to Oak Ridge Data Library',
+  });
 });

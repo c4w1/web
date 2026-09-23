@@ -122,3 +122,23 @@ export function topicalTags(entry: CatalogEntryData, community?: CommunityGeo): 
   const geoKeys = community ? communityGeoKeys(community) : [];
   return entry.tags.filter((tag) => !geoKeys.includes(slugify(tag)));
 }
+
+/** Display strings for a community library, derived from its configuration. */
+export interface CommunityNames {
+  name: string;
+  place_name?: string;
+}
+
+export function communityDisplay(community: CommunityNames): {
+  placeName: string;
+  libraryTitle: string;
+  welcomeHeading: string;
+} {
+  const place = community.place_name?.trim();
+  return {
+    placeName: place || community.name,
+    // e.g. "Knoxville Community Data Library"; falls back to the configured name.
+    libraryTitle: place ? `${place} Community Data Library` : community.name,
+    welcomeHeading: `Welcome to ${place || community.name}`,
+  };
+}
