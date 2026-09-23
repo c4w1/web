@@ -19,7 +19,8 @@
     "validate:schema": "node scripts/validate-geojson.mjs",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx,.astro",
     "format": "prettier --write .",
-    "check": "npm run lint && npm run validate:geo && npm run build"
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "check": "npm run lint && npm run validate:geo && npm test && npm run build"
   },
   "repository": {
     "type": "git",
