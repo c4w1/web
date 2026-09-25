@@ -149,3 +149,78 @@ test('communityDisplay falls back to the library name without place_name', () =>
     welcomeHeading: 'Welcome to Oak Ridge Data Library',
   });
 });
+
+// ── Canonical coverage (SQLite export) ──────────────────────────────────────
+
+const covered = (
+  coverage: CatalogEntryData['coverage'],
+  granularity?: CatalogEntryData['granularity']
+) => entry({ coverage, granularity, tags: [] });
+
+test('coverage: county match includes the dataset', () => {
+  assert.equal(
+    matchesCommunity(covered([{ level: 'county', geoid: '47093' }], 'point'), knox),
+    true
+  );
+  assert.equal(
+    matchesCommunity(covered([{ level: 'county', geoid: '47093' }], 'point'), davidson),
+    false
+  );
+});
+
+test('coverage: national or same-state data needs county-level granularity', () => {
+  const nation = [{ level: 'nation' as const, geoid: 'US' }];
+  for (const g of ['county', 'zip', 'point'] as const) {
+    assert.equal(matchesCommunity(covered(nation, g), knox), true, g);
+  }
+  assert.equal(matchesCommunity(covered(nation, 'state'), knox), false);
+  assert.equal(matchesCommunity(covered(nation, 'nation'), knox), false);
+  assert.equal(matchesCommunity(covered(nation), knox), false);
+  assert.equal(matchesCommunity(covered([{ level: 'state', geoid: '47' }], 'county'), knox), true);
+  assert.equal(matchesCommunity(covered([{ level: 'state', geoid: '37' }], 'county'), knox), false);
+});
+
+test('coverage wins over tags; entries without coverage still match by tag', () => {
+  const tagged = entry({
+    tags: ['knox-county'],
+    coverage: [{ level: 'nation', geoid: 'US' }],
+    granularity: 'state',
+  });
+  assert.equal(matchesCommunity(tagged, knox), false);
+  assert.equal(matchesCommunity(entry({ tags: ['knox-county'] }), knox), true);
+});
+
+test('coverage needs the community county FIPS', () => {
+  const minimal: CommunityGeo = { slug: 'oak-ridge', state_code: 'TN' };
+  assert.equal(
+    matchesCommunity(covered([{ level: 'nation', geoid: 'US' }], 'county'), minimal),
+    false
+  );
+});
+
+// ── Canonical student suitability ───────────────────────────────────────────
+
+test('suitable shows students even when legacy rules would hide it', () => {
+  const e = entry({ studentSuitability: 'suitable', sensitive: true, tags: ['opioid-deaths'] });
+  assert.equal(canAudienceAccess(e, 'student'), true);
+});
+
+test('not_suitable hides students but not other roles', () => {
+  const e = entry({ studentSuitability: 'not_suitable' });
+  assert.equal(canAudienceAccess(e, 'student'), false);
+  assert.equal(visibleAudiences(e), 'teacher community');
+});
+
+test('unreviewed (or missing) keeps the legacy behavior', () => {
+  for (const s of ['unreviewed', undefined] as const) {
+    assert.equal(
+      canAudienceAccess(entry({ studentSuitability: s, sensitive: true }), 'student'),
+      false
+    );
+    assert.equal(
+      canAudienceAccess(entry({ studentSuitability: s, tags: ['addiction'] }), 'student'),
+      false
+    );
+    assert.equal(canAudienceAccess(entry({ studentSuitability: s }), 'student'), true);
+  }
+});

@@ -32,7 +32,23 @@ export interface CatalogEntryData {
   pedagogicalTags: string[];
   audienceAccess?: { teacher: boolean; student: boolean; community: boolean };
   sensitive?: boolean;
+  /** Canonical (SQLite) student classification; 'unreviewed' uses the legacy fallback. */
+  studentSuitability?: StudentSuitability;
+  /** Places the dataset describes: 'US', 2-digit state FIPS, or 5-digit county FIPS. */
+  coverage?: CoverageEntry[];
+  /** Finest geographic level the data resolves to. */
+  granularity?: Granularity;
 }
+
+export type StudentSuitability = 'suitable' | 'not_suitable' | 'unreviewed';
+export type Granularity = 'nation' | 'state' | 'county' | 'zip' | 'point';
+export interface CoverageEntry {
+  level: 'nation' | 'state' | 'county';
+  geoid: string;
+}
+
+/** Levels fine enough to show county-level data for a community. */
+const COUNTY_RESOLVABLE: readonly Granularity[] = ['county', 'zip', 'point'];
 
 /** The subset of community configuration this module needs. */
 export interface CommunityGeo {
@@ -42,8 +58,8 @@ export interface CommunityGeo {
   county_fips?: string;
 }
 
-// Keyword check carried over unchanged from the original libraryAccess.ts.
-// It is a stopgap until the backend has a canonical student-suitability field.
+// Legacy keyword check, used only for entries whose studentSuitability is
+// 'unreviewed'. Delete it with legacyStudentFallback() once every source is reviewed.
 const STUDENT_RESTRICTED_KEYWORDS = ['opioid', 'drug', 'addiction'];
 
 const DEFAULT_ACCESS = { teacher: true, student: true, community: true };
@@ -77,7 +93,36 @@ export function communityGeoKeys(community: CommunityGeo): string[] {
   return [...keys];
 }
 
+/**
+ * Whether a catalog entry belongs in a community's catalog.
+ *
+ * Entries with canonical coverage (everything from the SQLite export):
+ *   1. coverage includes the community's county FIPS -> include;
+ *   2. coverage includes its state or the nation AND the data resolves to county
+ *      level or finer (county, zip, point) -> include;
+ *   3. otherwise exclude (e.g. state-only or national-only data).
+ * Entries without coverage (hand-written guides and tools) fall back to tag matching.
+ */
 export function matchesCommunity(entry: CatalogEntryData, community: CommunityGeo): boolean {
+  if (entry.coverage && entry.coverage.length > 0) {
+    return matchesByCoverage(entry, community);
+  }
+  return matchesByTags(entry, community);
+}
+
+function matchesByCoverage(entry: CatalogEntryData, community: CommunityGeo): boolean {
+  const countyFips = community.county_fips;
+  if (!countyFips) return false;
+  const stateFips = countyFips.slice(0, 2);
+  const coverage = entry.coverage ?? [];
+  if (coverage.some((c) => c.level === 'county' && c.geoid === countyFips)) return true;
+  const coversArea = coverage.some(
+    (c) => c.level === 'nation' || (c.level === 'state' && c.geoid === stateFips)
+  );
+  return coversArea && !!entry.granularity && COUNTY_RESOLVABLE.includes(entry.granularity);
+}
+
+function matchesByTags(entry: CatalogEntryData, community: CommunityGeo): boolean {
   const keys = communityGeoKeys(community);
   const tags = entry.tags.map((tag) => slugify(tag));
   return tags.some((tag) => keys.includes(tag));
@@ -87,6 +132,16 @@ export function canAudienceAccess(entry: CatalogEntryData, audience: AudienceRol
   const access = entry.audienceAccess ?? DEFAULT_ACCESS;
   if (!access[audience]) return false;
   if (audience !== 'student') return true;
+  if (entry.studentSuitability === 'suitable') return true;
+  if (entry.studentSuitability === 'not_suitable') return false;
+  return legacyStudentFallback(entry);
+}
+
+/**
+ * Pre-classification student rule (sensitive flag + keywords). Applies only to
+ * 'unreviewed' entries; remove when no source is unreviewed.
+ */
+export function legacyStudentFallback(entry: CatalogEntryData): boolean {
   if (entry.sensitive) return false;
   const themes = [...entry.dataThemes, ...entry.tags].map((theme) => theme.toLowerCase());
   return !themes.some((theme) =>

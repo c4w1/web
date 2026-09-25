@@ -27,6 +27,25 @@ const masterLibraryCollection = defineCollection({
         community: true,
       }),
     sensitive: z.boolean().default(false),
+    // Canonical fields from the SQLite export (see backend database/schema.sql).
+    // 'unreviewed' uses the legacy student heuristics in communityFilter.ts.
+    studentSuitability: z.enum(['suitable', 'not_suitable', 'unreviewed']).default('unreviewed'),
+    granularity: z.enum(['nation', 'state', 'county', 'zip', 'point']).optional(),
+    coverage: z
+      .array(
+        z.object({
+          level: z.enum(['nation', 'state', 'county']),
+          geoid: z.string().regex(/^(US|\d{2}|\d{5})$/),
+        })
+      )
+      .default([]),
+    location: z
+      .object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        label: z.string().optional(),
+      })
+      .optional(),
     url: z.string().url().optional(),
     fileUrl: z.string().url().optional(),
     featured: z.boolean().default(false),
