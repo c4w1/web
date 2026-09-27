@@ -26,11 +26,9 @@
   to = "/web/"
   status = 302
 
-[[redirects]]
-  from = "/web"
-  to = "/web/"
-  status = 301
-
+# Netlify ignores trailing slashes when matching rules, so a "/web" -> "/web/"
+# redirect also matches "/web/" and loops forever (the broken Home link).
+# "/web/*" already covers both "/web" and "/web/" (they rewrite to "/").
 [[redirects]]
   from = "/web/*"
   to = "/:splat"
