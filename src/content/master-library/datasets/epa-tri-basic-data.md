@@ -23,13 +23,16 @@ dataThemes:
   - "government-administration"
   - "health-social-services"
   - "law-public-safety"
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+pedagogicalTags: []
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "state"
+coverage:
+  - { level: "nation", geoid: "US" }
+location:
+  latitude: 38.8939
+  longitude: -77.0287
+  label: "EPA headquarters, Washington, DC (approximate)"
 url: "https://www.epa.gov/toxics-release-inventory-tri-program/tri-basic-data-files-calendar-years-1987-present"
 featured: false
 difficulty: "beginner"

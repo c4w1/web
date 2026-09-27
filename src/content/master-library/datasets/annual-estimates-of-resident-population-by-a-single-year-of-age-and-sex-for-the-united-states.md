@@ -23,13 +23,12 @@ dataThemes:
   - "environment"
   - "geospatial"
   - "public-data"
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+pedagogicalTags: []
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "nation"
+coverage:
+  - { level: "nation", geoid: "US" }
 url: "https://www.nass.usda.gov/AgCensus"
 featured: false
 difficulty: "beginner"

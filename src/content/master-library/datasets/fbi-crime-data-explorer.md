@@ -16,13 +16,16 @@ tags:
 dataThemes:
   - "energy-environment"
   - "law-public-safety"
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+pedagogicalTags: []
 sensitive: true
+studentSuitability: "not_suitable"
+granularity: "state"
+coverage:
+  - { level: "nation", geoid: "US" }
+location:
+  latitude: 38.8951
+  longitude: -77.0249
+  label: "FBI headquarters, Washington, DC (approximate)"
 url: "https://cde.ucr.cjis.gov"
 featured: false
 difficulty: "beginner"

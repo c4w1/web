@@ -2,31 +2,41 @@
 title: "Knox County Community Health Data"
 description: "County-level health indicators for Knox County, TN, including mortality rates, chronic disease prevalence, mental health metrics, and social determinants of health. Compiled from the Tennessee Department of Health and the Robert Wood Johnson County Health Rankings."
 author: "Tennessee Department of Health / County Health Rankings"
-publishedDate: 2024-09-15
-tags:
-  - knox-county
-  - tennessee
-  - public-health
-  - community
-  - government
-  - local
-dataThemes:
-  - public-health
-  - demographics
-  - inequality
-pedagogicalTags:
-  - data-literacy
-  - social-justice
-  - policy-analysis
-  - civic-education
+sourceId: "knox-county-health-data"
 category: "dataset"
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+syncedFromBackend: true
+tags:
+  - "dataset"
+  - "government-data"
+  - "public-health"
+  - "demographics"
+  - "inequality"
+  - "community"
+  - "government"
+dataThemes:
+  - "public-health"
+  - "demographics"
+  - "inequality"
+  - "community"
+  - "government"
+pedagogicalTags:
+  - "data-literacy"
+  - "social-justice"
+  - "policy-analysis"
+  - "civic-education"
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "county"
+coverage:
+  - { level: "county", geoid: "47093" }
+location:
+  latitude: 35.9931
+  longitude: -83.9375
+  label: "Knox County, TN (approximate center)"
+publishedDate: 2024-09-15
 url: "https://www.countyhealthrankings.org/location/tennessee/knox-county"
 featured: false
+difficulty: "beginner"
 language: "English"
 ---
 

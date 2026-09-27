@@ -2,31 +2,41 @@
 title: "Knox County Schools — Enrollment & Performance Data"
 description: "School-level enrollment, graduation rates, proficiency scores, and demographic breakdowns for all Knox County Schools (KCS) campuses. Published annually by the Tennessee Department of Education and supplemented by KCS's own data portal."
 author: "Tennessee Department of Education / Knox County Schools"
-publishedDate: 2024-10-01
-tags:
-  - knox-county
-  - tennessee
-  - education
-  - schools
-  - government
-  - local
-dataThemes:
-  - education
-  - demographics
-  - inequality
-pedagogicalTags:
-  - civic-education
-  - data-literacy
-  - social-justice
-  - policy-analysis
+sourceId: "knox-county-schools"
 category: "dataset"
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+syncedFromBackend: true
+tags:
+  - "dataset"
+  - "government-data"
+  - "education"
+  - "demographics"
+  - "inequality"
+  - "schools"
+  - "government"
+dataThemes:
+  - "education"
+  - "demographics"
+  - "inequality"
+  - "schools"
+  - "government"
+pedagogicalTags:
+  - "civic-education"
+  - "data-literacy"
+  - "social-justice"
+  - "policy-analysis"
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "point"
+coverage:
+  - { level: "county", geoid: "47093" }
+location:
+  latitude: 35.9931
+  longitude: -83.9375
+  label: "Knox County, TN (approximate center)"
+publishedDate: 2024-10-01
 url: "https://www.tn.gov/education/data/report-card.html"
 featured: false
+difficulty: "beginner"
 language: "English"
 ---
 
