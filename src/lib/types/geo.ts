@@ -5,6 +5,8 @@ export type GeoMarkerProperties = {
   tags?: string[];
   region?: string;
   sourceUrl?: string;
+  description?: string;
+  locationLabel?: string;
   updatedAt?: string; // ISO datetime
 };
 

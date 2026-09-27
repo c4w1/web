@@ -4,7 +4,7 @@ This folder organizes community geographic markers in a consistent, machine-veri
 
 ## Structure
 
-- `markers.geojson`: Canonical FeatureCollection of Point markers.
+- `markers.geojson`: **Generated** FeatureCollection of Point markers. Do not edit by hand: `npm run sync:map` (part of `prebuild`) rebuilds it from the backend's SQLite export (`data/exports/catalog.json`), one marker per dataset with a `location`. To move or add a marker, set `location` on the source in the backend repo, re-import, and re-export.
 - `schema/marker.schema.json`: JSON Schema validating marker properties within each feature.
 - `samples/`: Optional example files for testing and onboarding.
 

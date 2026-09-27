@@ -26,6 +26,11 @@
       "description": "ISO 3166-1 alpha-2 code or region label",
       "pattern": "^[A-Z]{2}|[A-Za-z0-9 -]+$"
     },
+    "description": { "type": "string" },
+    "locationLabel": {
+      "type": "string",
+      "description": "What the point represents, e.g. an agency headquarters or a county center."
+    },
     "sourceUrl": { "type": "string", "format": "uri" },
     "updatedAt": { "type": "string", "format": "date-time" }
   }

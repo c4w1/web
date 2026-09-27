@@ -122,7 +122,9 @@ const usFeatures = features.filter((f) => f.properties?.region === 'US');
 
           const name = feature.properties?.name || 'Unknown';
           const url = feature.properties?.sourceUrl;
+          const place = feature.properties?.locationLabel;
           const popupHtml = `<strong>${name}</strong><br/>Category: ${cat}` +
+            (place ? `<br/><small>${place}</small>` : '') +
             (url ? `<br/><a href="${url}" target="_blank" rel="noopener">Source</a>` : '');
           marker.bindPopup(popupHtml);
 

@@ -5,320 +5,480 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [-122.41942, 37.77493]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "sf-open-data-portal",
-        "name": "San Francisco Open Data Portal",
-        "category": "site",
-        "tags": ["open-data", "civic", "transport", "health"],
-        "region": "US",
-        "sourceUrl": "https://datasf.org/opendata/",
-        "updatedAt": "2026-01-15T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-87.6298, 41.8781]
-      },
-      "properties": {
-        "id": "chicago-data-portal",
-        "name": "Chicago Data Portal",
-        "category": "site",
-        "tags": ["open-data", "civic", "urban", "crime", "transit"],
-        "region": "US",
-        "sourceUrl": "https://data.cityofchicago.org/",
-        "updatedAt": "2026-02-15T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-74.006, 40.7128]
-      },
-      "properties": {
-        "id": "nyc-open-data",
-        "name": "NYC Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "nyc", "311", "transportation"],
-        "region": "US",
-        "sourceUrl": "https://opendata.cityofnewyork.us/",
-        "updatedAt": "2026-03-01T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-77.0369, 38.9072]
-      },
-      "properties": {
-        "id": "dc-open-data",
-        "name": "DC Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "government", "washington-dc"],
-        "region": "US",
-        "sourceUrl": "https://opendata.dc.gov/",
-        "updatedAt": "2025-12-01T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-0.1278, 51.5074]
-      },
-      "properties": {
-        "id": "london-datastore",
-        "name": "London Datastore",
-        "category": "site",
-        "tags": ["open-data", "civic", "urban", "transport", "housing"],
-        "region": "UK",
-        "sourceUrl": "https://data.london.gov.uk/",
-        "updatedAt": "2026-01-20T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [2.3522, 48.8566]
-      },
-      "properties": {
-        "id": "paris-open-data",
-        "name": "Paris Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "urban", "transport"],
-        "region": "France",
-        "sourceUrl": "https://opendata.paris.fr/",
-        "updatedAt": "2026-01-10T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [151.2093, -33.8688]
-      },
-      "properties": {
-        "id": "nsw-data",
-        "name": "NSW Government Data",
-        "category": "site",
-        "tags": ["open-data", "government", "australia", "health", "environment"],
-        "region": "Australia",
-        "sourceUrl": "https://data.nsw.gov.au/",
-        "updatedAt": "2025-11-30T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [18.4241, -33.9249]
-      },
-      "properties": {
-        "id": "cape-town-open-data",
-        "name": "Cape Town Open Data Portal",
-        "category": "site",
-        "tags": ["open-data", "civic", "africa", "urban", "water"],
-        "region": "South Africa",
-        "sourceUrl": "https://opendata.capetown.gov.za/",
-        "updatedAt": "2025-10-15T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-99.1332, 19.4326]
-      },
-      "properties": {
-        "id": "cdmx-open-data",
-        "name": "Ciudad de México Datos Abiertos",
-        "category": "site",
-        "tags": ["open-data", "civic", "latin-america", "transport", "air-quality"],
-        "region": "Mexico",
-        "sourceUrl": "https://datos.cdmx.gob.mx/",
-        "updatedAt": "2025-09-20T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [103.8198, 1.3521]
-      },
-      "properties": {
-        "id": "singapore-data",
-        "name": "Data.gov.sg",
-        "category": "site",
-        "tags": ["open-data", "government", "singapore", "health", "housing"],
-        "region": "Singapore",
-        "sourceUrl": "https://data.gov.sg/",
-        "updatedAt": "2026-02-05T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [28.9784, 41.0082]
-      },
-      "properties": {
-        "id": "istanbul-open-data",
-        "name": "Istanbul Metropolitan Municipality Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "urban", "transport", "environment"],
-        "region": "Turkey",
-        "sourceUrl": "https://data.ibb.gov.tr/",
-        "updatedAt": "2025-11-01T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-43.1729, -22.9068]
-      },
-      "properties": {
-        "id": "rio-open-data",
-        "name": "Rio de Janeiro Data Portal",
-        "category": "site",
-        "tags": ["open-data", "civic", "brazil", "urban", "environment"],
-        "region": "Brazil",
-        "sourceUrl": "http://www.data.rio/",
-        "updatedAt": "2025-08-15T00:00:00Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [72.8777, 19.076]
-      },
-      "properties": {
-        "id": "mumbai-open-data",
-        "name": "Mumbai Metropolitan Region Data",
+        "id": "census-annual-pop-by-age-sex-2025",
+        "name": "Annual Estimates of the Resident Population by Single Year of Age and Sex for the United States: April 1 2020 to July 1 2025",
         "category": "dataset",
-        "tags": ["open-data", "civic", "india", "urban", "population"],
-        "region": "India",
-        "sourceUrl": "https://data.gov.in/",
-        "updatedAt": "2025-07-01T00:00:00Z"
+        "tags": [
+          "business-finance",
+          "children-families",
+          "economy",
+          "election",
+          "prek-12-education",
+          "energy-environment"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www.census.gov/data/datasets/time-series/demo/popest/2020s-national-detail.html"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [-43.9345, -19.9322]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "cdl-bh-community",
-        "name": "CDL Community Hub — Belo Horizonte",
-        "category": "organization",
-        "tags": ["community", "education", "latin-america", "data-literacy"],
-        "region": "Brazil",
-        "sourceUrl": "https://community-data-libraries.github.io/web/",
-        "updatedAt": "2026-02-20T00:00:00Z"
+        "id": "census-annual-pop-selected-age-groups-2024",
+        "name": "Annual Estimates of the Resident Population for Selected Age Groups by Sex for the United States",
+        "category": "dataset",
+        "tags": [
+          "business-finance",
+          "children-families",
+          "economy",
+          "election",
+          "prek-12-education",
+          "energy-environment"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www.census.gov/data/datasets/time-series/demo/popest/2020s-national-detail.html"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [-0.1769, 5.5913]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "cdl-accra-community",
-        "name": "CDL Community Chapter — Accra",
-        "category": "organization",
-        "tags": ["community", "education", "africa", "data-literacy"],
-        "region": "Ghana",
-        "sourceUrl": "https://community-data-libraries.github.io/web/",
-        "updatedAt": "2026-01-10T00:00:00Z"
+        "id": "census-county-estimates-all-2025",
+        "name": "County Estimates All Data 2025",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "population-data"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [-43.9345, 43.2965]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "cdl-marseille-event",
-        "name": "Data Literacy Workshop — Marseille 2026",
-        "category": "event",
-        "tags": ["workshop", "education", "europe", "data-literacy"],
-        "region": "France",
-        "sourceUrl": "https://community-data-libraries.github.io/web/",
-        "updatedAt": "2026-03-01T00:00:00Z"
+        "id": "census-county-population-2020-2025",
+        "name": "County Population Totals and Components of Change 2020-2025",
+        "category": "dataset",
+        "tags": [
+          "business-finance",
+          "children-families",
+          "economy",
+          "election",
+          "prek-12-education",
+          "energy-environment"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www.census.gov/data/datasets/time-series/demo/popest/2020s-counties-total.html"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [-79.3832, 43.6532]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "toronto-open-data",
-        "name": "Toronto Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "canada", "transit", "parks"],
-        "region": "Canada",
-        "sourceUrl": "https://open.toronto.ca/",
-        "updatedAt": "2026-01-25T00:00:00Z"
+        "id": "census-resident-pop-18plus-2025",
+        "name": "Estimates of the Total Resident Population and Resident Population Age 18 Years and Older for the United States, Regions, States, District of Columbia, and Puerto Rico - July 1 2025",
+        "category": "dataset",
+        "tags": [
+          "business-finance",
+          "children-families",
+          "economy",
+          "election",
+          "prek-12-education",
+          "energy-environment"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www.census.gov/data/datasets/time-series/demo/popest/2020s-national-detail.html"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [4.9041, 52.3676]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "amsterdam-data",
-        "name": "Amsterdam Open Data",
-        "category": "site",
-        "tags": ["open-data", "civic", "europe", "urban", "cycling"],
-        "region": "Netherlands",
-        "sourceUrl": "https://data.amsterdam.nl/",
-        "updatedAt": "2025-12-20T00:00:00Z"
+        "id": "census-state-estimates-all-2025",
+        "name": "National State Estimates All Data 2025",
+        "category": "dataset",
+        "tags": [
+          "economy",
+          "energy-environment",
+          "government-administration",
+          "housing-buildings",
+          "population-data"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/state/totals/"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [13.405, 52.52]
+        "coordinates": [
+          -76.9296,
+          38.8468
+        ]
       },
       "properties": {
-        "id": "berlin-open-data",
-        "name": "Berliner Datenportal",
-        "category": "site",
-        "tags": ["open-data", "civic", "europe", "urban", "environment"],
-        "region": "Germany",
-        "sourceUrl": "https://daten.berlin.de/",
-        "updatedAt": "2025-11-10T00:00:00Z"
+        "id": "census-state-pop-change-2020-2025",
+        "name": "National State Population Change 2020-2025",
+        "category": "dataset",
+        "tags": [
+          "economy",
+          "energy-environment",
+          "government-administration",
+          "housing-buildings",
+          "population-data"
+        ],
+        "region": "US",
+        "locationLabel": "U.S. Census Bureau headquarters, Suitland, MD (approximate)",
+        "sourceUrl": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/state/totals/"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [126.9779, 37.5665]
+        "coordinates": [
+          -76.451,
+          42.4801
+        ]
       },
       "properties": {
-        "id": "seoul-open-data",
-        "name": "Seoul Open Data Plaza",
-        "category": "site",
-        "tags": ["open-data", "civic", "korea", "urban", "public-services"],
-        "region": "South Korea",
-        "sourceUrl": "https://data.seoul.go.kr/",
-        "updatedAt": "2026-02-28T00:00:00Z"
+        "id": "ebird-observation-dataset",
+        "name": "eBird Observation Dataset",
+        "category": "dataset",
+        "tags": [],
+        "region": "US",
+        "locationLabel": "Cornell Lab of Ornithology, Ithaca, NY (approximate)",
+        "sourceUrl": "https://ebird.org/data/download/ebd"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.451,
+          42.4801
+        ]
+      },
+      "properties": {
+        "id": "ebird-state-summaries",
+        "name": "State-Level eBird Data Summaries",
+        "category": "dataset",
+        "tags": [],
+        "region": "US",
+        "locationLabel": "Cornell Lab of Ornithology, Ithaca, NY (approximate)",
+        "sourceUrl": "https://www.birds.cornell.edu/home/us-state-level-conservation-data-summaries/"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0287,
+          38.8939
+        ]
+      },
+      "properties": {
+        "id": "epa-airtoxscreen-county",
+        "name": "AirToxScreen Emissions by County",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "government-administration"
+        ],
+        "region": "US",
+        "locationLabel": "EPA headquarters, Washington, DC (approximate)",
+        "sourceUrl": "https://www.epa.gov/system/files/other-files/2024-05/airtoxscreen_2020_emissions_county_sourcegroup.zip"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0287,
+          38.8939
+        ]
+      },
+      "properties": {
+        "id": "epa-tri-basic-data",
+        "name": "Toxic Release Inventory Basic Data Files",
+        "category": "dataset",
+        "tags": [
+          "business-finance",
+          "children-families",
+          "energy-environment",
+          "government-administration",
+          "health-social-services",
+          "law-public-safety"
+        ],
+        "region": "US",
+        "locationLabel": "EPA headquarters, Washington, DC (approximate)",
+        "sourceUrl": "https://www.epa.gov/toxics-release-inventory-tri-program/tri-basic-data-files-calendar-years-1987-present"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0287,
+          38.8939
+        ]
+      },
+      "properties": {
+        "id": "epa-tri-dioxin",
+        "name": "TRI Dioxin and Dioxin-like Compounds and TEQ Data Files: 2008-Present",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "government-administration"
+        ],
+        "region": "US",
+        "locationLabel": "EPA headquarters, Washington, DC (approximate)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0287,
+          38.8939
+        ]
+      },
+      "properties": {
+        "id": "epa-tri-ez-search",
+        "name": "Toxics Release Inventory EZ Search",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "government-administration"
+        ],
+        "region": "US",
+        "locationLabel": "EPA headquarters, Washington, DC (approximate)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0249,
+          38.8951
+        ]
+      },
+      "properties": {
+        "id": "fbi-crime-data-explorer",
+        "name": "National FBI Crime Data Explorer",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "law-public-safety"
+        ],
+        "region": "US",
+        "locationLabel": "FBI headquarters, Washington, DC (approximate)",
+        "sourceUrl": "https://cde.ucr.cjis.gov"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0249,
+          38.8951
+        ]
+      },
+      "properties": {
+        "id": "fbi-state-agency-data",
+        "name": "FBI State and Agency Crime Data",
+        "category": "dataset",
+        "tags": [
+          "energy-environment",
+          "government-administration",
+          "law-public-safety"
+        ],
+        "region": "US",
+        "locationLabel": "FBI headquarters, Washington, DC (approximate)",
+        "sourceUrl": "https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/explorer/crime/crime-trend"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.9375,
+          35.9931
+        ]
+      },
+      "properties": {
+        "id": "knox-county-health-data",
+        "name": "Knox County Community Health Data",
+        "category": "dataset",
+        "tags": [
+          "public-health",
+          "demographics",
+          "inequality",
+          "community",
+          "government"
+        ],
+        "region": "US",
+        "description": "County-level health indicators for Knox County, TN, including mortality rates, chronic disease prevalence, mental health metrics, and social determinants of health. Compiled from the Tennessee Department of Health and the Robert Wood Johnson County Health Rankings.",
+        "locationLabel": "Knox County, TN (approximate center)",
+        "sourceUrl": "https://www.countyhealthrankings.org/location/tennessee/knox-county"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.9187,
+          35.9612
+        ]
+      },
+      "properties": {
+        "id": "knox-county-property-assessor",
+        "name": "Knox County Property Assessor Data",
+        "category": "dataset",
+        "tags": [
+          "housing",
+          "economics",
+          "land-use",
+          "property",
+          "government"
+        ],
+        "region": "US",
+        "description": "Parcel-level property records for Knox County, TN, including assessed values, ownership, land use codes, square footage, and sale history. Updated annually by the Knox County Property Assessor's Office and available as bulk CSV download or interactive map.",
+        "locationLabel": "City County Building, 400 Main St, Knoxville, TN (approximate)",
+        "sourceUrl": "https://www.knoxcounty.org/property_assessor/"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.9375,
+          35.9931
+        ]
+      },
+      "properties": {
+        "id": "knox-county-schools",
+        "name": "Knox County Schools — Enrollment & Performance Data",
+        "category": "dataset",
+        "tags": [
+          "education",
+          "demographics",
+          "inequality",
+          "schools",
+          "government"
+        ],
+        "region": "US",
+        "description": "School-level enrollment, graduation rates, proficiency scores, and demographic breakdowns for all Knox County Schools (KCS) campuses. Published annually by the Tennessee Department of Education and supplemented by KCS's own data portal.",
+        "locationLabel": "Knox County, TN (approximate center)",
+        "sourceUrl": "https://www.tn.gov/education/data/report-card.html"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.9187,
+          35.9612
+        ]
+      },
+      "properties": {
+        "id": "knoxville-open-data",
+        "name": "City of Knoxville Open Data Portal",
+        "category": "dataset",
+        "tags": [
+          "civic",
+          "public-safety",
+          "infrastructure",
+          "land-use",
+          "open-data",
+          "government"
+        ],
+        "region": "US",
+        "description": "City-operated open data portal publishing datasets on public safety, infrastructure, parks, permits, and more for Knoxville, TN. Datasets are downloadable as CSV, GeoJSON, or accessible via the Socrata API.",
+        "locationLabel": "City County Building, 400 Main St, Knoxville, TN (approximate)",
+        "sourceUrl": "https://knoxvilletn.gov/government/opendata"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0303,
+          38.8882
+        ]
+      },
+      "properties": {
+        "id": "usda-milk-production",
+        "name": "U.S. Milk Production and Related Data",
+        "category": "dataset",
+        "tags": [
+          "agriculture",
+          "economy",
+          "energy-environment",
+          "government-administration",
+          "health-social-services",
+          "housing-buildings"
+        ],
+        "region": "US",
+        "locationLabel": "USDA headquarters, Washington, DC (approximate)",
+        "sourceUrl": "https://www.ers.usda.gov/data-products/dairy-data"
       }
     }
   ]
