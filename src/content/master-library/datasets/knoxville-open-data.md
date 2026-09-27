@@ -2,32 +2,42 @@
 title: "City of Knoxville Open Data Portal"
 description: "City-operated open data portal publishing datasets on public safety, infrastructure, parks, permits, and more for Knoxville, TN. Datasets are downloadable as CSV, GeoJSON, or accessible via the Socrata API."
 author: "City of Knoxville"
-publishedDate: 2024-07-01
-tags:
-  - knox-county
-  - knoxville
-  - tennessee
-  - open-data
-  - civic
-  - government
-  - local
-dataThemes:
-  - civic
-  - public-safety
-  - infrastructure
-  - land-use
-pedagogicalTags:
-  - civic-education
-  - data-literacy
-  - quantitative-methods
+sourceId: "knoxville-open-data"
 category: "dataset"
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+syncedFromBackend: true
+tags:
+  - "dataset"
+  - "government-data"
+  - "civic"
+  - "public-safety"
+  - "infrastructure"
+  - "land-use"
+  - "open-data"
+  - "government"
+dataThemes:
+  - "civic"
+  - "public-safety"
+  - "infrastructure"
+  - "land-use"
+  - "open-data"
+  - "government"
+pedagogicalTags:
+  - "civic-education"
+  - "data-literacy"
+  - "quantitative-methods"
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "point"
+coverage:
+  - { level: "county", geoid: "47093" }
+location:
+  latitude: 35.9612
+  longitude: -83.9187
+  label: "City County Building, 400 Main St, Knoxville, TN (approximate)"
+publishedDate: 2024-07-01
 url: "https://knoxvilletn.gov/government/opendata"
 featured: false
+difficulty: "beginner"
 language: "English"
 ---
 

@@ -27,6 +27,25 @@ const masterLibraryCollection = defineCollection({
         community: true,
       }),
     sensitive: z.boolean().default(false),
+    // Canonical fields from the SQLite export (see backend database/schema.sql).
+    // 'unreviewed' uses the legacy student heuristics in communityFilter.ts.
+    studentSuitability: z.enum(['suitable', 'not_suitable', 'unreviewed']).default('unreviewed'),
+    granularity: z.enum(['nation', 'state', 'county', 'zip', 'point']).optional(),
+    coverage: z
+      .array(
+        z.object({
+          level: z.enum(['nation', 'state', 'county']),
+          geoid: z.string().regex(/^(US|\d{2}|\d{5})$/),
+        })
+      )
+      .default([]),
+    location: z
+      .object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        label: z.string().optional(),
+      })
+      .optional(),
     url: z.string().url().optional(),
     fileUrl: z.string().url().optional(),
     featured: z.boolean().default(false),
@@ -38,29 +57,21 @@ const communitiesCollection = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/communities' }),
   schema: z.object({
     name: z.string(),
+    place_name: z.string().optional(),
     slug: z.string(),
     description: z.string().optional(),
     state_code: z.string().length(2),
     county: z.string().optional(),
-    county_fips: z.string().regex(/^\d{5}$/).optional(),
+    county_fips: z
+      .string()
+      .regex(/^\d{5}$/)
+      .optional(),
     zip_codes: z.array(z.string().regex(/^\d{5}$/)).default([]),
     librarian_email: z.string().email().optional(),
-  }),
-});
-
-const datasetsCollection = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/datasets' }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    source_url: z.string().url().optional().or(z.literal('')),
-    community: z.string(),
-    audience: z.array(z.enum(['student', 'teacher', 'community_member'])).default([]),
   }),
 });
 
 export const collections = {
   'master-library': masterLibraryCollection,
   communities: communitiesCollection,
-  datasets: datasetsCollection,
 };

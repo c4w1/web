@@ -2,30 +2,40 @@
 title: "Knox County Property Assessor Data"
 description: "Parcel-level property records for Knox County, TN, including assessed values, ownership, land use codes, square footage, and sale history. Updated annually by the Knox County Property Assessor's Office and available as bulk CSV download or interactive map."
 author: "Knox County Property Assessor"
-publishedDate: 2024-08-01
-tags:
-  - knox-county
-  - tennessee
-  - property
-  - housing
-  - government
-  - local
-dataThemes:
-  - housing
-  - economics
-  - land-use
-pedagogicalTags:
-  - civic-education
-  - data-literacy
-  - quantitative-methods
+sourceId: "knox-county-property-assessor"
 category: "dataset"
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+syncedFromBackend: true
+tags:
+  - "dataset"
+  - "government-data"
+  - "housing"
+  - "economics"
+  - "land-use"
+  - "property"
+  - "government"
+dataThemes:
+  - "housing"
+  - "economics"
+  - "land-use"
+  - "property"
+  - "government"
+pedagogicalTags:
+  - "civic-education"
+  - "data-literacy"
+  - "quantitative-methods"
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "point"
+coverage:
+  - { level: "county", geoid: "47093" }
+location:
+  latitude: 35.9612
+  longitude: -83.9187
+  label: "City County Building, 400 Main St, Knoxville, TN (approximate)"
+publishedDate: 2024-08-01
 url: "https://www.knoxcounty.org/property_assessor/"
 featured: false
+difficulty: "beginner"
 language: "English"
 ---
 

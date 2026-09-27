@@ -12,15 +12,17 @@ tags:
   - "county"
   - "year"
   - "account-required"
-dataThemes:
-  - general
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+dataThemes: []
+pedagogicalTags: []
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "county"
+coverage:
+  - { level: "nation", geoid: "US" }
+location:
+  latitude: 42.4801
+  longitude: -76.451
+  label: "Cornell Lab of Ornithology, Ithaca, NY (approximate)"
 url: "https://ebird.org/data/download/ebd"
 featured: false
 difficulty: "advanced"

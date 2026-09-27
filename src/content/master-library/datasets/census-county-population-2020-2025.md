@@ -33,13 +33,16 @@ dataThemes:
   - "housing-buildings"
   - "labor-workforce-development"
   - "population-data"
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+pedagogicalTags: []
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "county"
+coverage:
+  - { level: "nation", geoid: "US" }
+location:
+  latitude: 38.8468
+  longitude: -76.9296
+  label: "U.S. Census Bureau headquarters, Suitland, MD (approximate)"
 url: "https://www.census.gov/data/datasets/time-series/demo/popest/2020s-counties-total.html"
 featured: false
 difficulty: "beginner"

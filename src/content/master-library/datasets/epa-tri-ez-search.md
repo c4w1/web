@@ -16,13 +16,16 @@ tags:
 dataThemes:
   - "energy-environment"
   - "government-administration"
-pedagogicalTags:
-  - data-literacy
-audienceAccess:
-  teacher: true
-  student: true
-  community: true
+pedagogicalTags: []
 sensitive: false
+studentSuitability: "unreviewed"
+granularity: "zip"
+coverage:
+  - { level: "nation", geoid: "US" }
+location:
+  latitude: 38.8939
+  longitude: -77.0287
+  label: "EPA headquarters, Washington, DC (approximate)"
 featured: false
 difficulty: "beginner"
 language: "English"
