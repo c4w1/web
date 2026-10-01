@@ -34,7 +34,7 @@ location:
   longitude: -83.9375
   label: "Knox County, TN (approximate center)"
 publishedDate: 2024-09-15
-url: "https://www.countyhealthrankings.org/location/tennessee/knox-county"
+url: "https://www.countyhealthrankings.org/health-data/tennessee/knox"
 featured: false
 difficulty: "beginner"
 language: "English"

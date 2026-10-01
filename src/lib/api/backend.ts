@@ -1,9 +1,9 @@
 function resolveApiBase(): string {
   const configured = import.meta.env.PUBLIC_API_BASE_URL?.trim();
   if (configured) return configured.replace(/\/$/, '');
-  // In dev, Astro proxies /api/sources and /api/health to the preview API (see astro.config.mjs).
-  if (import.meta.env.DEV) return '';
-  return 'http://localhost:4323';
+  // Same origin: in dev, Astro proxies /api/* to backend/server.mjs (see astro.config.mjs);
+  // on Netlify, /api/* is served by netlify/functions/preview-api.mjs.
+  return '';
 }
 
 const API_BASE = resolveApiBase();
@@ -118,11 +118,16 @@ async function apiFetch<T>(path: string): Promise<T> {
       const contentType = response.headers.get('content-type') ?? '';
       if (contentType.includes('text/html')) {
         throw new Error(
-          `API error ${response.status}: preview API not reachable. Run \`npm run backend:dev\` (port 4323) in the web repo, then reload.`,
+          import.meta.env.DEV
+            ? `API error ${response.status}: preview API not reachable. Run \`npm run backend:dev\` (port 4323) in the web repo, then reload.`
+            : `API error ${response.status}: the preview service is unavailable. Please try again later.`,
         );
       }
-      const body = await response.json().catch(() => ({}));
-      throw new Error((body as { details?: string; error?: string }).details ?? (body as { error?: string }).error ?? `API error ${response.status}`);
+      const body = (await response.json().catch(() => ({}))) as { details?: string; error?: string };
+      // e.g. "This dataset can't be previewed yet (XLSX files are not supported…)"
+      const message =
+        body.error && body.details ? `${body.error} (${body.details})` : body.details ?? body.error;
+      throw new Error(message ?? `API error ${response.status}`);
     }
     return response.json() as Promise<T>;
   } catch (error) {

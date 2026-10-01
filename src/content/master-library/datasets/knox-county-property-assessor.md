@@ -33,7 +33,7 @@ location:
   longitude: -83.9187
   label: "City County Building, 400 Main St, Knoxville, TN (approximate)"
 publishedDate: 2024-08-01
-url: "https://www.knoxcounty.org/property_assessor/"
+url: "https://property.knoxcounty.org/"
 featured: false
 difficulty: "beginner"
 language: "English"
