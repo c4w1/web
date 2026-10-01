@@ -100,7 +100,7 @@ const catalogHref = withBasePath('/complete-catalog');
 
         <div class="chart-panel panel-card">
           <div class="chart-header">
-            <h2 class="section-title">Focal variable plot</h2>
+            <h2 class="section-title" id="chart-title">Focal variable plot</h2>
             <div class="chart-controls" id="chart-controls">
               <label class="filter-control" id="state-filter-wrap" hidden>
                 <span>State</span>
@@ -136,6 +136,12 @@ const catalogHref = withBasePath('/complete-catalog');
               <!-- filled by JS -->
             </div>
           </details>
+          <div id="preview-unavailable" class="preview-unavailable" hidden>
+            <p id="preview-unavailable-message"></p>
+            <a id="preview-unavailable-link" class="btn-download" href="#" target="_blank" rel="noopener noreferrer" hidden>
+              Visit the provider ↗
+            </a>
+          </div>
           <div class="chart-canvas-wrap">
             <div id="chart-loading" class="section-loading" hidden>Loading chart…</div>
             <div id="focal-chart" aria-label="Focal variable chart"></div>
@@ -173,6 +179,7 @@ const catalogHref = withBasePath('/complete-catalog');
       getGeographicTags,
     } from '@lib/api/backend';
     import { withBasePath } from '@lib/paths';
+    import { previewUnavailableReason } from '@lib/data/previewSupport';
 
     function getSourceIdFromUrl() {
       return new URLSearchParams(window.location.search).get('source')?.trim() ?? '';
@@ -234,6 +241,22 @@ const catalogHref = withBasePath('/complete-catalog');
       document.getElementById('chart-loading')?.toggleAttribute('hidden', !chartLoading);
       document.getElementById('table-loading')?.toggleAttribute('hidden', !tableLoading);
       document.getElementById('preview-grid')?.toggleAttribute('hidden', tableLoading);
+    }
+
+    // Info-only sources: keep the description and datasheet, replace chart and table.
+    function showPreviewUnavailable(message: string, providerUrl?: string) {
+      document.getElementById('chart-title')!.textContent = 'Data preview';
+      document.getElementById('chart-controls')?.setAttribute('hidden', '');
+      document.querySelector('.chart-canvas-wrap')?.setAttribute('hidden', '');
+      document.querySelector('.table-panel')?.setAttribute('hidden', '');
+      document.getElementById('preview-unavailable')?.removeAttribute('hidden');
+      const text = document.getElementById('preview-unavailable-message');
+      if (text) text.textContent = message;
+      const link = document.getElementById('preview-unavailable-link') as HTMLAnchorElement | null;
+      if (link && providerUrl) {
+        link.href = providerUrl;
+        link.removeAttribute('hidden');
+      }
     }
 
     function showError(message) {
@@ -523,6 +546,7 @@ const catalogHref = withBasePath('/complete-catalog');
               <a href="${withBasePath(`/data-preview?source=${encodeURIComponent(s.id)}`)}">
                 <span class="source-card-title">${s.title}</span>
                 ${s.id === 'census-county-estimates-all-2025' ? '<span class="demo-badge">Demo</span>' : ''}
+                ${previewUnavailableReason(s) ? '<span class="info-badge">Info only</span>' : ''}
               </a>
             </li>`,
         )
@@ -559,7 +583,13 @@ const catalogHref = withBasePath('/complete-catalog');
         providerEl.textContent = `${source.provider.name}${agency}`;
         providerEl.removeAttribute('hidden');
       }
-      if (downloadBtn && source.download?.url) downloadBtn.href = source.download.url;
+      if (downloadBtn) {
+        if (source.download?.url) downloadBtn.href = source.download.url;
+        else if (source.provider?.url) {
+          downloadBtn.href = source.provider.url;
+          downloadBtn.textContent = 'Visit provider ↗';
+        } else downloadBtn.setAttribute('hidden', '');
+      }
       if (accountWarning && source.requires_account) accountWarning.removeAttribute('hidden');
 
       renderTags('topical-tags', normalizeDescriptionTags(source.description_tags), true);
@@ -576,6 +606,12 @@ const catalogHref = withBasePath('/complete-catalog');
       if (dsWhere) dsWhere.textContent = datasheet.where;
       if (dsWhy) dsWhy.textContent = datasheet.why;
       if (dsWhen) dsWhen.textContent = datasheet.when;
+
+      const unavailable = previewUnavailableReason(source);
+      if (unavailable) {
+        showPreviewUnavailable(unavailable, source.provider?.url);
+        return;
+      }
 
       const geoTags = getGeographicTags(source);
       try {
@@ -1250,11 +1286,11 @@ const catalogHref = withBasePath('/complete-catalog');
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     }
 
-    .source-card {
+    .source-grid :global(.source-card) {
       margin: 0;
     }
 
-    .source-card a {
+    .source-grid :global(.source-card a) {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -1270,19 +1306,49 @@ const catalogHref = withBasePath('/complete-catalog');
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    .source-card a:hover {
+    .source-grid :global(.source-card a:hover) {
       border-color: var(--color-border-highlight);
       box-shadow: var(--shadow-sm);
       color: var(--color-secondary);
       text-decoration: none;
     }
 
-    .source-card-title {
+    .source-grid :global(.source-card-title) {
       flex: 1;
       font-size: var(--font-size-sm);
     }
 
-    .demo-badge {
+    .source-grid :global(.info-badge) {
+      flex-shrink: 0;
+      padding: 0.15em 0.5em;
+      border: 1px solid var(--color-border, rgba(0, 0, 0, 0.15));
+      border-radius: 999px;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      opacity: 0.75;
+    }
+
+    .preview-unavailable {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4) 0;
+    }
+
+    .preview-unavailable p {
+      margin: 0;
+    }
+
+    .preview-unavailable[hidden],
+    .chart-canvas-wrap[hidden],
+    .chart-controls[hidden],
+    .table-panel[hidden],
+    .btn-download[hidden] {
+      display: none;
+    }
+
+    .source-grid :global(.demo-badge) {
       flex-shrink: 0;
       padding: 0.15em 0.5em;
       background: var(--color-primary-glow);
