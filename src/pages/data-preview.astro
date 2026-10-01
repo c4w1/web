@@ -21,8 +21,14 @@ const catalogHref = withBasePath('/complete-catalog');
     <div id="error-state" class="status-panel error-panel" hidden>
       <h2>Unable to load preview</h2>
       <p id="error-message"></p>
-      <p class="error-hint">Start the preview API in a separate terminal: <code>npm run backend:dev</code> (runs on port 4323).</p>
-      <p class="error-hint">The Astro dev server may use port 4322 when 4321 is busy — that is not the preview API.</p>
+      {
+        import.meta.env.DEV && (
+          <>
+            <p class="error-hint">Start the preview API in a separate terminal: <code>npm run backend:dev</code> (runs on port 4323).</p>
+            <p class="error-hint">The Astro dev server may use port 4322 when 4321 is busy — that is not the preview API.</p>
+          </>
+        )
+      }
     </div>
 
     <div id="source-picker" class="source-picker" hidden>

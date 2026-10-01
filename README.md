@@ -22,6 +22,8 @@ npm run dev           # Astro site on http://localhost:4321/web
 
 In development, the Astro dev server proxies `/api/sources` and `/api/health` to the preview API, so you usually do not need `PUBLIC_API_BASE_URL` in `.env`.
 
+**In production (Netlify)** the same `/api/*` routes are served by a Netlify Function, `netlify/functions/preview-api.mjs`; no separate server runs. The function and `backend/server.mjs` share `backend/lib/apiHandler.mjs`. The function reads sources from the SQLite export (`backend/data/exports/catalog.json`) and uses the Node preview engine (no pandas). Excel (`.xlsx`) datasets and sources without a direct download link return "can't be previewed yet" instead of an error page.
+
 Base URL (direct): `http://localhost:4323`
 
 ## Geographic Markers
