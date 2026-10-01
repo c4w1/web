@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "backend:dev": "BACKEND_PORT=4323 node --experimental-sqlite backend/server.mjs",
+    "backend:dev": "node --experimental-sqlite backend/server.mjs",
     "sync:backend-yaml": "node scripts/sync-backend-yaml.mjs",
     "check:backend-yaml": "node scripts/check-backend-yaml-sync.mjs",
     "sync:catalog": "node scripts/sync-catalog-from-backend.mjs",
