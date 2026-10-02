@@ -6,14 +6,11 @@ sourceId: "census-county-estimates-all-2025"
 category: "dataset"
 syncedFromBackend: true
 tags:
-  - "dataset"
-  - "government-data"
-  - "commerce"
-  - "energy-environment"
-  - "population-data"
+  - "Energy & Environment"
+  - "Population Data"
 dataThemes:
-  - "energy-environment"
-  - "population-data"
+  - "Energy & Environment"
+  - "Population Data"
 pedagogicalTags: []
 sensitive: false
 studentSuitability: "unreviewed"

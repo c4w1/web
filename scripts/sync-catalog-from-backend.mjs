@@ -43,13 +43,6 @@ async function resolveSourcesDir() {
   }
 }
 
-function slugifyTag(value) {
-  return String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 function normalizeDescriptionTags(tags) {
   if (!tags) return [];
   if (Array.isArray(tags)) return tags.map((t) => String(t).trim()).filter(Boolean);
@@ -93,7 +86,9 @@ export async function loadCatalogSources() {
   return { sources, origin: `YAML ${sourcesDir}` };
 }
 
-function extractPedagogicalTags(source, limit = 8) {
+// All active analysis tags: the catalog's pedagogical filter needs every one, and
+// cards only display the first few anyway.
+function extractPedagogicalTags(source) {
   // Curated pedagogical tags come first and keep their exact names.
   const tags = Object.entries(source.pedagogical_tags ?? {})
     .filter(([, active]) => active)
@@ -105,7 +100,7 @@ function extractPedagogicalTags(source, limit = 8) {
       if (active) tags.push(tagName.replace(/-/g, ' '));
     }
   }
-  return [...new Set(tags)].slice(0, limit);
+  return [...new Set(tags)];
 }
 
 function variableCount(source) {
@@ -141,19 +136,13 @@ function buildDescription(source) {
   return (intro + themeSentence + accessNote + detail).replace(/\s+/g, ' ').trim();
 }
 
+// Only tags the backend actually records — no invented placeholders.
 function buildTags(source, themes) {
-  const tags = new Set(['dataset', 'government-data']);
-  if (source.provider?.agency) {
-    const agency = source.provider.agency.split(' ').slice(-1)[0]?.toLowerCase();
-    if (agency) tags.add(slugifyTag(agency));
-  }
+  const tags = new Set(themes);
   if (source.filters?.state) tags.add('state');
   if (source.filters?.county) tags.add('county');
   if (source.filters?.year) tags.add('year');
   if (source.requires_account) tags.add('account-required');
-  for (const theme of themes) {
-    tags.add(slugifyTag(theme));
-  }
   return [...tags];
 }
 
@@ -178,7 +167,9 @@ function buildMarkdown(source) {
   const pedagogicalTags = extractPedagogicalTags(source);
   const description = source.description ?? buildDescription(source);
   const tags = buildTags(source, themes);
-  const dataThemes = themes.map((t) => slugifyTag(t)).filter(Boolean);
+  // Keep the backend's tag names as-is (e.g. "Energy & Environment") so the
+  // catalog shows the same tags as Data Preview.
+  const dataThemes = themes;
   const author = source.provider?.name ?? 'Unknown provider';
   const url = source.provider?.url ?? source.download?.url ?? '';
   const difficulty = inferDifficulty(source);
