@@ -276,3 +276,29 @@ export function getGeographicTags(source: BackendSource): string[] {
   }
   return tags;
 }
+
+const GRANULARITY_LABELS: Record<string, string> = {
+  nation: 'national',
+  state: 'state',
+  county: 'county',
+  tract: 'census tract',
+  zip: 'zip code',
+  zipcode: 'zip code',
+  point: 'point location',
+};
+
+/**
+ * Geographic tags for display. Unlike getGeographicTags (which only reports levels
+ * the data can be filtered by), this leads with the source's `geographic_granularity`,
+ * so sources with no filters or variable list (e.g. national datasets) still show one.
+ */
+export function getGeographicDisplayTags(source: BackendSource): string[] {
+  const granularity = String(source.geographic_granularity ?? '').toLowerCase();
+  const tags = [
+    GRANULARITY_LABELS[granularity] ?? granularity,
+    ...getGeographicTags(source)
+      .filter((tag) => tag !== 'year')
+      .map((tag) => GRANULARITY_LABELS[tag] ?? tag),
+  ].filter(Boolean);
+  return [...new Set(tags)];
+}

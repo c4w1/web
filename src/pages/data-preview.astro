@@ -177,6 +177,7 @@ const catalogHref = withBasePath('/complete-catalog');
       normalizeDescriptionTags,
       getPedagogicalTags,
       getGeographicTags,
+      getGeographicDisplayTags,
     } from '@lib/api/backend';
     import { withBasePath } from '@lib/paths';
     import { previewUnavailableReason } from '@lib/data/previewSupport';
@@ -611,7 +612,7 @@ const catalogHref = withBasePath('/complete-catalog');
 
       renderTags('topical-tags', normalizeDescriptionTags(source.description_tags), true);
       renderTags('pedagogical-tags', getPedagogicalTags(source));
-      renderTags('geographic-tags', getGeographicTags(source));
+      renderTags('geographic-tags', getGeographicDisplayTags(source));
 
       const dsWho = document.getElementById('ds-who');
       const dsHow = document.getElementById('ds-how');
