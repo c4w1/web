@@ -503,9 +503,10 @@ const catalogHref = withBasePath('/complete-catalog');
     async function refreshPreviewAndChart() {
       const state = stateFilter?.value || undefined;
       const county = countyFilter?.value || undefined;
-      const variable = variableFilter?.value || focalVariable;
-      const xVariable = xVariableFilter?.value || undefined;
       const plotType = (plotTypeFilter?.value || 'bar') as 'bar' | 'line' | 'scatter';
+      // Bar plots count rows per X value, so the Y variable doesn't apply.
+      const variable = plotType === 'bar' ? undefined : variableFilter?.value || focalVariable;
+      const xVariable = xVariableFilter?.value || undefined;
 
       setSectionLoading(true, true);
       try {
@@ -703,6 +704,7 @@ const catalogHref = withBasePath('/complete-catalog');
           xOptions.find((v) => temporalNames.includes(v.toUpperCase())) ?? xOptions[0] ?? '';
         renderXVariableOptions('bar', defaultX);
       }
+      updateYVariableState('bar');
 
       populateReferenceCard(source);
 
@@ -718,8 +720,16 @@ const catalogHref = withBasePath('/complete-catalog');
       xVariableFilter?.addEventListener('change', refreshPreviewAndChart);
       plotTypeFilter?.addEventListener('change', async () => {
         renderXVariableOptions(plotTypeFilter.value, xVariableFilter?.value);
+        updateYVariableState(plotTypeFilter.value);
         await refreshPreviewAndChart();
       });
+    }
+
+    function updateYVariableState(plotType: string) {
+      if (!variableFilter) return;
+      const isBar = plotType === 'bar';
+      variableFilter.disabled = isBar;
+      variableFilter.title = isBar ? 'Bar plots show the count of rows for each X value' : '';
     }
 
     // Scatter needs two numeric axes, so its X list is narrowed to numeric columns.
@@ -1168,6 +1178,15 @@ const catalogHref = withBasePath('/complete-catalog');
       max-width: 100%;
       appearance: none;
       cursor: pointer;
+    }
+
+    .filter-control:has(select:disabled) {
+      opacity: 0.5;
+    }
+
+    .filter-control select:disabled {
+      background-color: var(--color-surface-raised);
+      cursor: not-allowed;
     }
 
     .filter-control select:focus {

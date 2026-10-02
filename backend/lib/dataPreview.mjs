@@ -138,12 +138,31 @@ export async function buildChart(source, options = {}) {
   const { variable, state, county, limit = 50, xVariable, plotType = "bar" } = options;
   const { headers, rows } = await getSourceTable(source);
 
+  const filtered = filterRows(headers, rows, { state, county });
+
+  // A bar plot shows how many rows fall in each X category, so it has no Y variable.
+  if (plotType === "bar") {
+    const xCol = resolveXColumn(headers, xVariable);
+    const counts = new Map();
+    for (const row of filtered) {
+      const xKey = String(rowToObject(headers, row)[xCol] ?? "").trim();
+      if (xKey === "") continue;
+      counts.set(xKey, (counts.get(xKey) ?? 0) + 1);
+    }
+    const series = [...counts].map(([label, value]) => ({ label, value }));
+    return {
+      variable: "count",
+      label: "Count",
+      xVariable: xCol,
+      xLabel: xCol.replace(/_/g, " "),
+      series: sortAndLimitSeries(series, limit),
+    };
+  }
+
   const focalVariable = variable || defaultFocalVariable(source, headers);
   if (!focalVariable || !headers.includes(focalVariable)) {
     throw new Error(`Focal variable not found: ${focalVariable ?? "none"}`);
   }
-
-  const filtered = filterRows(headers, rows, { state, county });
 
   if (plotType === "scatter") {
     if (!xVariable || !headers.includes(xVariable)) {
@@ -167,14 +186,7 @@ export async function buildChart(source, options = {}) {
     };
   }
 
-  // Determine X-axis column
-  let xCol;
-  if (xVariable && headers.includes(xVariable)) {
-    xCol = xVariable;
-  } else {
-    // Auto-detect: try temporal columns first, then fall back to headers[0]
-    xCol = findColumn(headers, TEMPORAL_COLUMNS) || headers[0];
-  }
+  const xCol = resolveXColumn(headers, xVariable);
 
   // Group rows by X value, accumulating Y values for averaging
   const xGroups = new Map(); // xKey -> { sum, count }
@@ -192,29 +204,36 @@ export async function buildChart(source, options = {}) {
   }
 
   // Build series from groups
-  let series = [];
+  const series = [];
   for (const [xKey, { sum, count }] of xGroups) {
     series.push({ label: xKey, value: sum / count });
   }
-
-  // Sort: numeric if all X labels are numeric strings, else lexicographic
-  const allNumeric = series.every((p) => Number.isFinite(Number(p.label)));
-  if (allNumeric) {
-    series.sort((a, b) => Number(a.label) - Number(b.label));
-  } else {
-    series.sort((a, b) => a.label.localeCompare(b.label));
-  }
-
-  // Apply limit after sorting
-  if (series.length > limit) series = series.slice(0, limit);
 
   return {
     variable: focalVariable,
     label: focalVariable.replace(/_/g, " "),
     xVariable: xCol,
     xLabel: xCol.replace(/_/g, " "),
-    series,
+    series: sortAndLimitSeries(series, limit),
   };
+}
+
+function resolveXColumn(headers, xVariable) {
+  if (xVariable && headers.includes(xVariable)) return xVariable;
+  // Auto-detect: try temporal columns first, then fall back to headers[0]
+  return findColumn(headers, TEMPORAL_COLUMNS) || headers[0];
+}
+
+// Sort numerically if all X labels are numeric strings, else lexicographically;
+// apply the limit after sorting.
+function sortAndLimitSeries(series, limit) {
+  const allNumeric = series.every((p) => Number.isFinite(Number(p.label)));
+  if (allNumeric) {
+    series.sort((a, b) => Number(a.label) - Number(b.label));
+  } else {
+    series.sort((a, b) => a.label.localeCompare(b.label));
+  }
+  return series.slice(0, limit);
 }
 
 export async function listFilterOptions(source, filterType, parentFilter = {}) {
