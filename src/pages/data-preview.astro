@@ -297,11 +297,9 @@ const catalogHref = withBasePath('/complete-catalog');
       tags.forEach((tag, i) => {
         const chip = document.createElement('span');
         chip.className = `tag-chip ${filledFirst && i === 0 ? 'tag-filled' : 'tag-outline'}`;
-        chip.textContent = tag;
+        // Keep the comma inside the chip so the flex gap only falls after it.
+        chip.textContent = i < tags.length - 1 ? `${tag},` : tag;
         container.appendChild(chip);
-        if (i < tags.length - 1) {
-          container.appendChild(document.createTextNode(', '));
-        }
       });
     }
 
@@ -959,7 +957,9 @@ const catalogHref = withBasePath('/complete-catalog');
     .tag-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--space-2);
+      column-gap: 0.35em;
+      row-gap: 0;
+      line-height: 1.5;
     }
 
     .tag-chip {
