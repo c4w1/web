@@ -232,17 +232,30 @@ const usFeatures = features.filter((f) => f.properties?.region === 'US');
         margin-bottom: 0;
       }
 
+      /* The panel sits beside the map (below it on narrow screens) rather than
+         over it: as an overlay it hid the Northeast, and maxBounds kept the map
+         from being dragged out from under it. */
       .map-shell {
-        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-4);
+        margin: 0 0 var(--space-4);
         isolation: isolate;
       }
 
+      @media (min-width: 900px) {
+        .map-shell {
+          grid-template-columns: minmax(0, 1fr) 340px;
+        }
+      }
+
       #map {
+        grid-row: 1;
+        grid-column: 1;
         height: 560px;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md);
-        margin: 0 0 var(--space-4);
         /* Override Leaflet's white background */
         background: var(--color-surface) !important;
         position: relative;
@@ -251,19 +264,20 @@ const usFeatures = features.filter((f) => f.properties?.region === 'US');
       }
 
       .map-panel {
-        position: absolute;
-        top: var(--space-4);
-        right: var(--space-4);
-        width: min(340px, calc(100% - var(--space-8)));
-        max-height: calc(100% - var(--space-8));
+        max-height: 560px;
         overflow: auto;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(12px);
-        box-shadow: var(--shadow-lg);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-md);
         padding: var(--space-4);
-        z-index: 2;
+      }
+
+      @media (min-width: 900px) {
+        .map-panel {
+          grid-row: 1;
+          grid-column: 2;
+        }
       }
 
       .panel-eyebrow {
