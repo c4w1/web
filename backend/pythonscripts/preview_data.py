@@ -43,8 +43,6 @@ GEO_COLUMNS = {
     "countyName": ["CTYNAME", "COUNTY_NAME", "COUNTYNAME"],
 }
 
-TEMPORAL_COLUMNS = ["YEAR", "DATE", "PERIOD", "TIMEPERIOD_NAME"]
-
 
 def find_column(df: pd.DataFrame, candidates: list[str]) -> str | None:
     upper_map = {str(c).upper(): c for c in df.columns}
@@ -193,31 +191,6 @@ def build_chart(source: dict[str, Any], options: dict[str, Any]) -> dict[str, An
 
     df = load_dataframe(source)
     filtered = filter_dataframe(df, state, county)
-
-    # A bar plot shows how many rows fall in each X category, so it has no Y variable.
-    if plot_type == "bar":
-        limit = int(options.get("limit", 50))
-        x_col = (
-            x_variable
-            if x_variable and x_variable in filtered.columns
-            else find_column(filtered, TEMPORAL_COLUMNS) or str(filtered.columns[0])
-        )
-        x_values = filtered[x_col].fillna("").astype(str).str.strip()
-        counts = x_values[x_values != ""].value_counts()
-        if len(counts) and all(_is_numeric_label(label) for label in counts.index):
-            counts = counts.sort_index(key=lambda idx: idx.map(float))
-        else:
-            counts = counts.sort_index()
-        counts = counts.head(limit)
-        return {
-            "variable": "count",
-            "label": "Count",
-            "xVariable": x_col,
-            "xLabel": x_col.replace("_", " "),
-            "series": [{"label": label, "value": int(value)} for label, value in counts.items()],
-            "engine": "pandas",
-        }
-
     focal = variable or default_focal_variable(source, df)
     if not focal or focal not in filtered.columns:
         raise ValueError(f"Focal variable not found: {focal}")

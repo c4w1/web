@@ -143,6 +143,7 @@ const catalogHref = withBasePath('/complete-catalog');
             </a>
           </div>
           <div class="chart-canvas-wrap">
+            <p id="chart-note" class="chart-note" hidden></p>
             <div id="chart-loading" class="section-loading" hidden>Loading chart…</div>
             <div id="focal-chart" aria-label="Focal variable chart"></div>
           </div>
@@ -426,6 +427,20 @@ const catalogHref = withBasePath('/complete-catalog');
       chartInstance.render();
     }
 
+    // Bar and Line plots average the Y values within each X value; say so,
+    // since the Y axis otherwise reads as raw values.
+    function renderChartNote(chartData, plotType: string) {
+      const note = document.getElementById('chart-note');
+      if (!note) return;
+      if (plotType === 'scatter' || !chartData.xLabel) {
+        note.setAttribute('hidden', '');
+        return;
+      }
+      const mark = plotType === 'line' ? 'Each point' : 'Each bar';
+      note.textContent = `${mark} shows the average (mean) ${chartData.label} for that ${chartData.xLabel}.`;
+      note.removeAttribute('hidden');
+    }
+
     function escapeHtml(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -503,10 +518,9 @@ const catalogHref = withBasePath('/complete-catalog');
     async function refreshPreviewAndChart() {
       const state = stateFilter?.value || undefined;
       const county = countyFilter?.value || undefined;
-      const plotType = (plotTypeFilter?.value || 'bar') as 'bar' | 'line' | 'scatter';
-      // Bar plots count rows per X value, so the Y variable doesn't apply.
-      const variable = plotType === 'bar' ? undefined : variableFilter?.value || focalVariable;
+      const variable = variableFilter?.value || focalVariable;
       const xVariable = xVariableFilter?.value || undefined;
+      const plotType = (plotTypeFilter?.value || 'bar') as 'bar' | 'line' | 'scatter';
 
       setSectionLoading(true, true);
       try {
@@ -528,6 +542,7 @@ const catalogHref = withBasePath('/complete-catalog');
 
         renderTable(preview);
         renderChart(chart, plotType);
+        renderChartNote(chart, plotType);
       } finally {
         setSectionLoading(false, false);
       }
@@ -704,7 +719,6 @@ const catalogHref = withBasePath('/complete-catalog');
           xOptions.find((v) => temporalNames.includes(v.toUpperCase())) ?? xOptions[0] ?? '';
         renderXVariableOptions('bar', defaultX);
       }
-      updateYVariableState('bar');
 
       populateReferenceCard(source);
 
@@ -720,16 +734,8 @@ const catalogHref = withBasePath('/complete-catalog');
       xVariableFilter?.addEventListener('change', refreshPreviewAndChart);
       plotTypeFilter?.addEventListener('change', async () => {
         renderXVariableOptions(plotTypeFilter.value, xVariableFilter?.value);
-        updateYVariableState(plotTypeFilter.value);
         await refreshPreviewAndChart();
       });
-    }
-
-    function updateYVariableState(plotType: string) {
-      if (!variableFilter) return;
-      const isBar = plotType === 'bar';
-      variableFilter.disabled = isBar;
-      variableFilter.title = isBar ? 'Bar plots show the count of rows for each X value' : '';
     }
 
     // Scatter needs two numeric axes, so its X list is narrowed to numeric columns.
@@ -1180,15 +1186,6 @@ const catalogHref = withBasePath('/complete-catalog');
       cursor: pointer;
     }
 
-    .filter-control:has(select:disabled) {
-      opacity: 0.5;
-    }
-
-    .filter-control select:disabled {
-      background-color: var(--color-surface-raised);
-      cursor: not-allowed;
-    }
-
     .filter-control select:focus {
       outline: 2px solid var(--color-secondary-glow);
       border-color: var(--color-secondary);
@@ -1225,6 +1222,12 @@ const catalogHref = withBasePath('/complete-catalog');
       margin-bottom: var(--space-4);
       padding-bottom: var(--space-3);
       border-bottom: 1px solid var(--color-border);
+    }
+
+    .chart-note {
+      margin: 0 0 var(--space-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
     }
 
     .table-meta {
