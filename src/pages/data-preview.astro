@@ -216,15 +216,34 @@ const catalogHref = withBasePath('/complete-catalog');
       return source.variables ?? source.variable_names ?? [];
     }
 
+    const PREFERRED_FOCAL = /estimate|total|value|amount|production|population/i;
+
     function pickFocalVariable(source) {
-      const numeric = source.variable_report?.find(
+      const numeric = (source.variable_report ?? []).filter(
         (v) => v.type === 'integer' || v.type === 'float',
       );
-      if (numeric?.name) return numeric.name;
+      const focal = numeric.find((v) => PREFERRED_FOCAL.test(v.name)) ?? numeric[0];
+      if (focal?.name) return focal.name;
 
       const vars = getSourceVariables(source);
-      const preferred = vars.find((v) => /estimate|total|value|amount|production|population/i.test(v));
+      const preferred = vars.find((v) => PREFERRED_FOCAL.test(v));
       return preferred ?? vars[vars.length - 1] ?? '';
+    }
+
+    // Some catalog entries (e.g. usda-milk-production) carry neither `variables`
+    // nor `variable_report`, which left the X/Y dropdowns empty. Derive both from
+    // a sample of the data itself: a column is numeric when every non-blank cell is.
+    async function ensureSourceVariables(source) {
+      if (getSourceVariables(source).length > 0 || source.variable_report?.length) return;
+      const sample = await fetchPreview(sourceId, { limit: 200 });
+      source.variables = sample.columns;
+      source.variable_report = sample.columns.map((name, colIdx) => {
+        const cells = sample.rows
+          .map((row) => row[colIdx])
+          .filter((cell) => String(cell ?? '').trim() !== '');
+        const numeric = cells.length > 0 && cells.every(isNumericCell);
+        return { name, type: numeric ? 'float' : 'string' };
+      });
     }
 
     function pickInitialState(source) {
@@ -611,6 +630,13 @@ const catalogHref = withBasePath('/complete-catalog');
       if (unavailable) {
         showPreviewUnavailable(unavailable, source.provider?.url);
         return;
+      }
+
+      try {
+        await ensureSourceVariables(source);
+        focalVariable = pickFocalVariable(source);
+      } catch (sampleError) {
+        console.warn('Could not infer variables from data:', sampleError);
       }
 
       const geoTags = getGeographicTags(source);
