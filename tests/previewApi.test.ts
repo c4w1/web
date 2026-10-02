@@ -114,9 +114,9 @@ test('the Netlify function serves the real SQLite export', async () => {
   const health = await get('/api/health', previewFunction);
   assert.equal(health.body.runtime, 'netlify-function');
   assert.equal(health.body.dataSource, 'sqlite-export');
-  const knox = await get('/api/sources/knox-county-schools', previewFunction);
-  assert.equal(knox.status, 200);
-  assert.deepEqual(knox.body.coverage, [{ level: 'county', geoid: '47093' }]);
+  const milk = await get('/api/sources/usda-milk-production', previewFunction);
+  assert.equal(milk.status, 200);
+  assert.deepEqual(milk.body.coverage, [{ level: 'nation', geoid: 'US' }]);
 });
 
 test('an unreachable data provider returns 502', async () => {
