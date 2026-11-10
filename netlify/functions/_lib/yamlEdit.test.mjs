@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { readYaml, replaceTopLevelKeys } from './yamlEdit.mjs';
 import { stringify } from 'yaml';
 
-const SRC = readFileSync(new URL('./fixtures/sample-source.yml', import.meta.url), 'utf8');
+// Git may check the fixture out with CRLF on Windows; the tests assume LF.
+const SRC = readFileSync(new URL('./fixtures/sample-source.yml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
 function changedLines(a, b) {
   const x = a.split('\n');
