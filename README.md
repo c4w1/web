@@ -62,7 +62,7 @@ Details: [docs/technical/community-store.md](docs/technical/community-store.md).
 
 ## Decap CMS (team editing)
 
-Decap CMS is still available at `/admin` (or `/web/admin/` with the base path) for the Community Data Libraries team to edit community configuration directly: library name, place name, slug, geographic identifiers, and librarian emails. Librarians should use the portal instead; Decap cannot restrict a user to their own library. It uses Git Gateway, which Netlify has deprecated; whether to retire Decap is not decided yet.
+Decap CMS is still available at `/admin` (or `/web/admin/` with the base path) for the Community Data Libraries team to edit community configuration directly: library name, place name, slug, description, and geographic identifiers. Librarians should use the portal instead; Decap cannot restrict a user to their own library. It uses Git Gateway, which Netlify has deprecated; whether to retire Decap is not decided yet.
 
 Once the site has a Netlify Database (`NETLIFY_DB_URL`), the community pages are built from the database, so Decap edits to `src/content/communities/*.md` only change the fallback and the seed input. Edit live libraries in `/librarian/` instead (as an `admin` or one of the library's editors).
 

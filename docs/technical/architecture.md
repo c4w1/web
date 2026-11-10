@@ -103,9 +103,9 @@ The `master-library` collection (`src/content.config.ts`) validates every entry 
 Entries come from two sources:
 
 1. **Generated** — `npm run sync:catalog` reads backend YAML sources and writes `src/content/master-library/datasets/*.md`, one per dataset, inferring frontmatter (tags, themes, difficulty) from the pipeline output.
-2. **Hand-authored / CMS-edited** — non-dataset resources (guides, tools, papers) live in the same collection, editable directly or via Decap CMS.
+2. **Hand-authored** — non-dataset resources (guides, tools, papers) can live in the same collection and are edited directly in the repo.
 
-Decap CMS (`public/admin/config.yml`) manages exactly this one collection — it does not manage `community-submissions.json` or backend YAML. In production it authenticates via `git-gateway` + Netlify Identity; locally via `npx decap-server` (`local_backend: true`).
+Decap CMS (`public/admin/config.yml`) does not manage this collection. Its only collection is `communities` (`src/content/communities/*.md`), and it does not manage `community-submissions.json` or backend YAML. In production it authenticates via `git-gateway` + Netlify Identity; locally via `npx decap-server` (`local_backend: true`).
 
 Dataset metadata (backend YAML) is edited separately through the magic-link metadata editor on `/data-preview`; see [metadata-editor.md](metadata-editor.md).
 
@@ -129,4 +129,4 @@ Records in Netlify Database, the build's fallback to Markdown files, the librari
 
 ## Known documentation staleness
 
-A few existing docs under `web/docs/` predate the current collection name and file layout and still reference `src/content/complete-catalog` and `src/content/config.ts` (now `master-library` and `src/content.config.ts` respectively): `docs/technical/decapcms-implementation.md`, `docs/data/community-library-structure.md`, `docs/reference/job-description-data-role.md`. This document and the repo-root `ARCHITECTURE.md` reflect the current, verified names.
+A few existing docs under `web/docs/` predate the current collection name and file layout and still reference `src/content/complete-catalog` and `src/content/config.ts` (now `master-library` and `src/content.config.ts` respectively): `docs/data/community-library-structure.md`, `docs/reference/job-description-data-role.md`. This document and the repo-root `ARCHITECTURE.md` reflect the current, verified names.
