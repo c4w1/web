@@ -11,6 +11,9 @@
  *   COMMUNITY_BUILD_HOOK_URL  Build hook that rebuilds the site after an approval or an
  *                             edit to an approved library. Optional: without it the
  *                             write succeeds and the rebuild is skipped with a warning.
+ *   RESEND_API_KEY,           The same pair the contact form uses (library-contact.mjs). When both
+ *   CONTACT_FROM_EMAIL        are set, a new co-librarian request is emailed to the library's
+ *                             editors; without them, editors see requests in the portal only.
  * NETLIFY_DB_URL is provided by Netlify when the site has a database.
  */
 
@@ -22,8 +25,10 @@ import { normalizeEmail } from '../../src/lib/community/librarianRules.mjs';
 import { createBuildHook } from '../lib/buildHook.mjs';
 import { createCommunityDb } from '../lib/communityDb.mjs';
 import { createLibrarianHandler } from '../lib/librarianApi.mjs';
+import { createResendSender } from '../lib/libraryContact.mjs';
 
 const vocabulary = createVocabulary(geoVocabulary);
+const { RESEND_API_KEY, CONTACT_FROM_EMAIL } = process.env;
 
 /** The logged-in Identity user, or null. Unconfirmed accounts cannot log in at all. */
 async function verifyUser() {
@@ -44,6 +49,7 @@ export default async (request) =>
     db: process.env.NETLIFY_DB_URL ? openDb : null,
     rebuild: createBuildHook({ url: process.env.COMMUNITY_BUILD_HOOK_URL }),
     vocabulary,
+    send: RESEND_API_KEY && CONTACT_FROM_EMAIL ? createResendSender({ apiKey: RESEND_API_KEY, from: CONTACT_FROM_EMAIL }) : null,
   })(request);
 
 export const config = {

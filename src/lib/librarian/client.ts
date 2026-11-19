@@ -18,6 +18,7 @@ export const pages = {
   login: withBasePath('/librarian/login/'),
   register: withBasePath('/librarian/register/'),
   edit: (slug: string) => withBasePath(`/librarian/${encodeURIComponent(slug)}/edit/`),
+  join: (slug: string) => withBasePath(`/librarian/join/?slug=${encodeURIComponent(slug)}`),
   community: (slug: string) => libraryHref(slug),
 };
 

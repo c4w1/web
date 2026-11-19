@@ -9,7 +9,8 @@
  * Users are { email, roles } from a Netlify Identity login. Editors of a library
  * are the emails in community_editors; anyone logged in may register a library
  * (and becomes its first editor); only users with the Identity role "admin"
- * approve or reject new libraries.
+ * approve or reject new libraries. Anyone logged in may ask to become a co-librarian
+ * (an editor) of an approved library; its editors accept or decline (web#71).
  */
 
 import { describeCounty } from './geoVocabulary.mjs';
@@ -36,6 +37,10 @@ export const LIMITS = {
   description: 500,
   slug: 60,
   editors: 10,
+  requestMessage: 500,
+  // Open co-librarian requests a library can have at once (web#71), so a library
+  // can't be flooded with them.
+  requests: 20,
 };
 
 export const ADMIN_ROLE = 'admin';
@@ -144,7 +149,7 @@ function findDuplicates(community, existing) {
     errors.push({
       field: 'county_fips',
       message: clash.approved
-        ? `This county already has a library: ${clash.name}. Ask its editors to add you instead.`
+        ? `This county already has a library: ${clash.name}. Ask to join it as a co-librarian instead.`
         : `A library for this county is already awaiting approval: ${clash.name}.`,
       existing: { slug: clash.slug, name: clash.name, pending: !clash.approved },
     });
@@ -203,6 +208,51 @@ export function checkRemoveEditor({ editors, user, email }) {
   return { ok: true, email: target };
 }
 
+/** Whether `email` has an open co-librarian request in `requests` ([{ email }]). */
+function hasRequest(requests, email) {
+  const target = normalizeEmail(email);
+  return (requests ?? []).some((r) => normalizeEmail(r.email) === target);
+}
+
+/**
+ * Asking to become a co-librarian of `community` (web#71). Anyone logged in who is
+ * not already an editor may ask, once, and only for a published library: pending
+ * libraries are still being set up by their registrant.
+ */
+export function checkJoinRequest({ community, editors, requests, user, message }) {
+  if (!isValidEmail(user?.email)) return deny(403, 'Log in to ask to become a co-librarian.');
+  if (!community?.approved) return deny(404, 'This library isn’t taking co-librarian requests yet.');
+  const email = normalizeEmail(user.email);
+  if (isEditor(editors, email)) return deny(409, 'You are already an editor of this library.');
+  if (hasRequest(requests, email)) return deny(409, 'You have already asked to join this library. Its editors will get back to you.');
+  if (editors.length >= LIMITS.editors) return deny(409, `This library already has the most editors it can have (${LIMITS.editors}).`);
+  if ((requests ?? []).length >= LIMITS.requests) return deny(409, 'This library has too many open requests right now. Try again later.');
+  const text = String(message ?? '').trim();
+  if (text.length > LIMITS.requestMessage) return deny(400, `Keep your note to ${LIMITS.requestMessage} characters or fewer.`, 'message');
+  return { ok: true, email, message: text || null };
+}
+
+/**
+ * Accepting or declining someone's co-librarian request: the library's editors
+ * only. Accepting adds them as an editor, so the editor limit applies.
+ */
+export function checkAnswerRequest({ editors, requests, user, email, accept }) {
+  if (!isEditor(editors, user?.email)) return deny(403, 'Only this library’s editors can answer co-librarian requests.');
+  const target = normalizeEmail(email);
+  if (!hasRequest(requests, target)) return deny(404, `${target} has no open request for this library.`, 'email');
+  if (accept && editors.length >= LIMITS.editors) {
+    return deny(409, `A library can have at most ${LIMITS.editors} editors. Remove one before accepting.`, 'email');
+  }
+  return { ok: true, email: target };
+}
+
+/** Withdrawing your own co-librarian request. */
+export function checkWithdrawRequest({ requests, user }) {
+  const email = normalizeEmail(user?.email);
+  if (!hasRequest(requests, email)) return deny(404, 'You have no open request for this library.');
+  return { ok: true, email };
+}
+
 /** Approving or rejecting a library that is waiting for approval: admins only. */
 export function checkReview({ user, community }) {
   if (!isAdmin(user)) return deny(403, 'Only the Community Data Libraries team can approve libraries.');
@@ -220,7 +270,7 @@ export const PUBLIC_FIELDS = ['name', 'place_name', 'description', 'county_fips'
  * not public, so changing them does not rebuild, and neither does an update that
  * leaves every public field as it was.
  *
- * @param {'register' | 'update' | 'approve' | 'reject' | 'add-editor' | 'remove-editor'} action
+ * @param {'register' | 'update' | 'approve' | 'reject' | 'add-editor' | 'remove-editor' | 'request'} action
  * @param {object} community the library after the write
  * @param {object} [previous] the library before an update
  * @returns {string | null} a short reason for the build log, or null for no rebuild

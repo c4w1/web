@@ -60,6 +60,17 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     </form>
     <p class="field-error" id="editor-error" role="alert"></p>
   </section>
+
+  <section class="card" id="requests" hidden>
+    <h2>Co-librarian requests</h2>
+    <p class="note">
+      People who asked to help edit this library. Accepting adds them as an editor; declining removes the request. Reply
+      to the email you got about a request to ask them anything first.
+    </p>
+    <ul class="item-list" id="request-list"></ul>
+    <p class="note" id="request-empty">No open requests.</p>
+    <p class="field-error" id="request-error" role="alert"></p>
+  </section>
 </LibrarianPage>
 
 <script>
@@ -80,9 +91,16 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     editors: string[];
   }
 
+  interface JoinRequest {
+    email: string;
+    message: string | null;
+    requested_at: string;
+  }
+
   const form = document.getElementById('edit-form') as HTMLFormElement;
   const county = initCountyPicker(document.querySelector('[data-county-picker]') as HTMLElement);
   const editorError = document.getElementById('editor-error') as HTMLElement;
+  const requestError = document.getElementById('request-error') as HTMLElement;
   const slug = editSlugFromLocation(location.pathname, location.search);
   const path = `/${encodeURIComponent(slug ?? '')}`;
   const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -133,6 +151,41 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     );
   }
 
+  function renderRequests(requests: JoinRequest[]) {
+    document.getElementById('request-empty')!.hidden = requests.length > 0;
+    document.getElementById('request-list')!.replaceChildren(
+      ...requests.map((req) => {
+        const li = document.createElement('li');
+        const main = document.createElement('div');
+        main.className = 'item-main';
+        main.append(
+          Object.assign(document.createElement('span'), { className: 'item-name', textContent: req.email }),
+          Object.assign(document.createElement('span'), {
+            className: 'item-meta',
+            textContent: `Asked ${new Date(req.requested_at).toLocaleDateString()}${req.message ? `: “${req.message}”` : ''}`,
+          })
+        );
+        const target = `${path}/requests/${encodeURIComponent(req.email)}`;
+        const answer = (accept: boolean) => async () => {
+          requestError.textContent = '';
+          try {
+            const result = await api(accept ? `${target}/accept` : target, { method: accept ? 'POST' : 'DELETE' });
+            if (result.editors) renderEditors(result.editors);
+            renderRequests(result.requests);
+          } catch (err) {
+            requestError.textContent = message(err);
+          }
+        };
+        const accept = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Accept' });
+        accept.addEventListener('click', answer(true));
+        const decline = Object.assign(document.createElement('button'), { type: 'button', className: 'button-secondary', textContent: 'Decline' });
+        decline.addEventListener('click', answer(false));
+        li.append(main, accept, decline);
+        return li;
+      })
+    );
+  }
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = new FormData(form);
@@ -174,10 +227,14 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     }
     me = await requireUser();
     if (!me) return;
-    const { library, canEdit } = (await api(path)) as { library: Library; canEdit: boolean };
+    const { library, canEdit, requests } = (await api(path)) as { library: Library; canEdit: boolean; requests?: JoinRequest[] };
     fill(library);
     form.hidden = false;
     document.getElementById('editors')!.hidden = false;
+    if (canEdit && library.approved) {
+      renderRequests(requests ?? []);
+      document.getElementById('requests')!.hidden = false;
+    }
     if (!canEdit) {
       // Admins can look at a library they don't edit, but not change it.
       form.querySelectorAll('input, textarea, button').forEach((el) => el.setAttribute('disabled', ''));

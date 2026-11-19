@@ -1,18 +1,23 @@
 /**
  * In-memory stand-in for netlify/lib/communityDb.mjs with the same methods and
- * the same database rules (unique slug and county, last-editor guard), for
+ * the same database rules (unique slug and county, last-editor guard, one request
+ * per person per library), for
  * testing the librarian API without Postgres.
  */
 
 import { ConflictError } from '../../netlify/lib/communityDb.mjs';
 
-export function createMemoryCommunityDb(seed = []) {
+export function createMemoryCommunityDb(seed = [], requestSeed = []) {
   /** slug -> { community, editors: string[] } */
   const rows = new Map(seed.map(({ editors = [], ...community }) => [community.slug, { community: { ...community }, editors: [...editors] }]));
   const out = ({ community, editors }) => ({ ...community, editors: [...editors] });
+  /** Open co-librarian requests: { slug, email, message, requested_at } */
+  const requests = requestSeed.map((r, i) => ({ message: null, requested_at: new Date(Date.UTC(2026, 0, 1, 0, i)).toISOString(), ...r }));
+  const findRequest = (slug, email) => requests.findIndex((r) => r.slug === slug && r.email === email);
 
   return {
     rows,
+    requests,
     async listAll() {
       return [...rows.values()].map(({ community }) => ({ ...community }));
     },
@@ -47,6 +52,30 @@ export function createMemoryCommunityDb(seed = []) {
       if (!row || row.editors.length <= 1 || !row.editors.includes(email)) throw new ConflictError('cannot remove');
       row.editors = row.editors.filter((e) => e !== email);
     },
+    async listRequests(slug) {
+      return requests.filter((r) => r.slug === slug).map(({ email, message, requested_at }) => ({ email, message, requested_at }));
+    },
+    async listRequestsBy(email) {
+      return requests
+        .filter((r) => r.email === email && rows.has(r.slug))
+        .map((r) => ({ slug: r.slug, name: rows.get(r.slug).community.name, requested_at: r.requested_at }));
+    },
+    async addRequest(slug, email, message) {
+      if (!rows.has(slug) || findRequest(slug, email) !== -1) throw new ConflictError('duplicate request');
+      requests.push({ slug, email, message, requested_at: new Date().toISOString() });
+    },
+    async deleteRequest(slug, email) {
+      const i = findRequest(slug, email);
+      if (i === -1) throw new ConflictError('no request');
+      requests.splice(i, 1);
+    },
+    async acceptRequest(slug, email) {
+      const i = findRequest(slug, email);
+      const row = rows.get(slug);
+      if (i === -1 || !row || row.editors.includes(email)) throw new ConflictError('cannot accept');
+      requests.splice(i, 1);
+      row.editors.push(email);
+    },
     async approve(slug) {
       const row = rows.get(slug);
       if (!row || row.community.approved) throw new ConflictError('not pending');
@@ -57,6 +86,7 @@ export function createMemoryCommunityDb(seed = []) {
       const row = rows.get(slug);
       if (!row || row.community.approved) throw new ConflictError('not pending');
       rows.delete(slug);
+      for (let i = requests.length - 1; i >= 0; i--) if (requests[i].slug === slug) requests.splice(i, 1);
     },
   };
 }

@@ -1,0 +1,122 @@
+---
+// Ask to become a co-librarian (an editor) of a published library (web#71). One
+// static page for every library: /web/librarian/join/?slug=<slug>. The library's
+// contact page and the register page (when a county is taken) link here.
+import LibrarianPage from '@components/librarian/LibrarianPage.astro';
+import { LIMITS } from '@lib/community/librarianRules.mjs';
+---
+
+<LibrarianPage
+  title="Become a Co-librarian"
+  description="Ask to help keep a community data library up to date."
+  heading="Become a co-librarian"
+  intro="Co-librarians edit a library's details and answer messages from its visitors, alongside its other editors."
+>
+  <form class="card" id="join-form" novalidate hidden>
+    <h2 id="join-title">Ask to join</h2>
+    <p class="note">
+      The library's editors get your email address and your note, and accept or decline. Once accepted, the library
+      shows up under My libraries.
+    </p>
+    <div class="field">
+      <label for="f-message">A note for the editors (optional)</label>
+      <textarea id="f-message" name="message" maxlength={LIMITS.requestMessage} rows="4"
+        placeholder="Who you are and how you'd like to help, e.g. I teach civics at a local high school."></textarea>
+      <p class="field-error" data-error-for="message"></p>
+    </div>
+    <p class="form-error" role="alert"></p>
+    <div class="actions"><button type="submit">Ask to join</button></div>
+  </form>
+
+  <section class="card" id="join-sent" hidden>
+    <h2 id="sent-title">Request sent</h2>
+    <p class="note" id="sent-text"></p>
+    <div class="actions">
+      <button type="button" class="button-secondary" id="withdraw-btn">Withdraw request</button>
+    </div>
+  </section>
+</LibrarianPage>
+
+<script>
+  import { api, ApiError, pages, requireUser, showFieldErrors, showStatus } from '@lib/librarian/client';
+
+  interface JoinRequest {
+    email: string;
+    message: string | null;
+    requested_at?: string;
+  }
+
+  const form = document.getElementById('join-form') as HTMLFormElement;
+  const sent = document.getElementById('join-sent') as HTMLElement;
+  const slug = new URLSearchParams(location.search).get('slug')?.trim().toLowerCase() ?? '';
+  const path = `/${encodeURIComponent(slug)}/requests`;
+  const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
+  let libraryName = '';
+  let myEmail = '';
+
+  function showSent(request: JoinRequest) {
+    form.hidden = true;
+    const when = request.requested_at ? ` on ${new Date(request.requested_at).toLocaleDateString()}` : '';
+    document.getElementById('sent-title')!.textContent = `Request sent to ${libraryName}`;
+    document.getElementById('sent-text')!.textContent =
+      `You asked${when} to become a co-librarian of ${libraryName}. Its editors will accept or decline your request, ` +
+      'and may reply to you by email first.';
+    sent.hidden = false;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    button.disabled = true;
+    try {
+      const result = await api(path, { method: 'POST', body: { message: new FormData(form).get('message') } });
+      showFieldErrors(form, []);
+      showSent({ ...result.request, requested_at: new Date().toISOString() });
+    } catch (err) {
+      if (err instanceof ApiError) showFieldErrors(form, err.errors, err.message);
+      else showStatus(message(err), 'error');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.getElementById('withdraw-btn')!.addEventListener('click', async () => {
+    try {
+      await api(`${path}/${encodeURIComponent(myEmail)}`, { method: 'DELETE' });
+      sent.hidden = true;
+      form.hidden = false;
+      showStatus(`Withdrew your request to join ${libraryName}.`);
+    } catch (err) {
+      showStatus(message(err), 'error');
+    }
+  });
+
+  async function init() {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      showStatus('No library given. Open this page from a library’s contact page.', 'error');
+      return;
+    }
+    const me = await requireUser();
+    if (!me) return;
+    myEmail = (me.email ?? '').toLowerCase();
+    let data: { library?: { name: string }; request?: JoinRequest | null; requests?: JoinRequest[] };
+    try {
+      data = await api(path);
+    } catch (err) {
+      showStatus(message(err), 'error');
+      return;
+    }
+    if (!data.library) {
+      // Editors get the request list instead: they are already in.
+      showStatus('You already edit this library.');
+      location.href = pages.edit(slug);
+      return;
+    }
+    libraryName = data.library.name;
+    document.getElementById('join-title')!.textContent = `Ask to join ${libraryName}`;
+    if (data.request) showSent(data.request);
+    else form.hidden = false;
+  }
+
+  init().catch((err) => showStatus(message(err), 'error'));
+</script>

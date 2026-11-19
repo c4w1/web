@@ -25,7 +25,9 @@ const users: Record<string, { email: string; roles: string[] }> = {
   admin: { email: 'team@cdl.org', roles: ['admin'] },
 };
 
-function setup() {
+type Email = { to: string[]; replyTo: string; subject: string; text: string };
+
+function setup({ send = null }: { send?: ((email: Email) => Promise<void>) | null } = {}) {
   const db = createMemoryCommunityDb([
     { slug: 'knox-county', name: 'Knox County Data Library', place_name: 'Knoxville', county_fips: '47093', approved: true, editors: ['librarian@knoxdata.org', 'helper@knoxdata.org'] },
     { slug: 'anderson', name: 'Anderson Library', county_fips: '47001', approved: false, editors: ['new@anderson.org'] },
@@ -39,6 +41,7 @@ function setup() {
       return 'triggered';
     },
     vocabulary,
+    send,
   });
   async function call(method: string, path: string, { user, body, origin = SITE }: { user?: string; body?: unknown; origin?: string | null } = {}) {
     const headers: Record<string, string> = {};
@@ -156,6 +159,91 @@ test('editors add and remove editors, but never the last one; editor changes do 
   assert.equal(last.status, 409);
   assert.deepEqual(db.rows.get('knox-county')!.editors, ['librarian@knoxdata.org']);
   assert.deepEqual(rebuilds, [], 'editor lists are not public');
+});
+
+// ── Co-librarian requests (web#71) ───────────────────────────
+
+test('anyone logged in asks to become a co-librarian of a published library; editors are emailed', async () => {
+  const sent: Email[] = [];
+  const { call, db, rebuilds } = setup({ send: async (email) => void sent.push(email) });
+
+  const page = await call('GET', '/knox-county/requests', { user: 'stranger' });
+  assert.equal(page.status, 200);
+  assert.deepEqual(page.body, { library: { slug: 'knox-county', name: 'Knox County Data Library' }, request: null });
+
+  const asked = await call('POST', '/knox-county/requests', { user: 'stranger', body: { message: '  I teach civics at Fulton High.  ' } });
+  assert.equal(asked.status, 201);
+  assert.equal(asked.body.notified, true);
+  assert.deepEqual(db.requests.map(({ slug, email, message }) => ({ slug, email, message })), [
+    { slug: 'knox-county', email: 'stranger@example.org', message: 'I teach civics at Fulton High.' },
+  ]);
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].to, ['librarian@knoxdata.org', 'helper@knoxdata.org']);
+  assert.equal(sent[0].replyTo, 'stranger@example.org');
+  assert.match(sent[0].text, /I teach civics at Fulton High\./);
+  assert.match(sent[0].text, /https:\/\/cdl\.example\/web\/librarian\/knox-county\/edit\//);
+
+  assert.equal((await call('POST', '/knox-county/requests', { user: 'stranger', body: {} })).status, 409, 'one request each');
+  assert.equal((await call('GET', '/knox-county/requests', { user: 'stranger' })).body.request.email, 'stranger@example.org');
+  assert.deepEqual((await call('GET', '', { user: 'stranger' })).body.requests.map((r: { slug: string }) => r.slug), ['knox-county']);
+  assert.deepEqual(rebuilds, [], 'requests are not public');
+});
+
+test('editors, pending libraries and long notes cannot ask; a failed email still saves the request', async () => {
+  const { call, db } = setup({ send: async () => Promise.reject(new Error('Resend down')) });
+  assert.equal((await call('POST', '/knox-county/requests', { user: 'editor', body: {} })).status, 409);
+  assert.equal((await call('POST', '/anderson/requests', { user: 'stranger', body: {} })).status, 404);
+  assert.equal((await call('GET', '/anderson/requests', { user: 'stranger' })).status, 404);
+  assert.equal((await call('POST', '/knox-county/requests', { user: 'stranger', body: { message: 'x'.repeat(501) } })).status, 400);
+  assert.equal((await call('POST', '/knox-county/requests', { user: 'stranger', body: {}, origin: 'https://evil.example' })).status, 403);
+  assert.equal((await call('POST', '/knox-county/requests')).status, 401);
+
+  const asked = await call('POST', '/knox-county/requests', { user: 'stranger', body: {} });
+  assert.equal(asked.status, 201);
+  assert.equal(asked.body.notified, false);
+  assert.equal(db.requests.length, 1);
+});
+
+test('editors see and accept requests; the requester becomes an editor', async () => {
+  const { call, db } = setup();
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: { message: 'Hi' } });
+
+  const settings = await call('GET', '/knox-county', { user: 'editor' });
+  assert.deepEqual(settings.body.requests.map((r: { email: string }) => r.email), ['stranger@example.org']);
+  assert.deepEqual((await call('GET', '/knox-county/requests', { user: 'helper' })).body.requests.length, 1);
+
+  assert.equal((await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'stranger' })).status, 403);
+  assert.equal((await call('POST', '/knox-county/requests/nobody%40example.org/accept', { user: 'editor' })).status, 404);
+  const accepted = await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'editor' });
+  assert.equal(accepted.status, 200);
+  assert.deepEqual(accepted.body.requests, []);
+  assert.deepEqual(db.rows.get('knox-county')!.editors, ['librarian@knoxdata.org', 'helper@knoxdata.org', 'stranger@example.org']);
+  assert.equal(db.requests.length, 0);
+  assert.equal((await call('GET', '/knox-county', { user: 'stranger' })).status, 200, 'the new editor can open the settings');
+});
+
+test('editors decline requests; requesters withdraw their own; nobody else can', async () => {
+  const { call, db } = setup();
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: {} });
+  await call('POST', '/knox-county/requests', { user: 'admin', body: {} });
+
+  assert.equal((await call('DELETE', '/knox-county/requests/team%40cdl.org', { user: 'stranger' })).status, 403);
+  const declined = await call('DELETE', '/knox-county/requests/team%40cdl.org', { user: 'editor' });
+  assert.equal(declined.status, 200);
+  assert.deepEqual(declined.body.requests.map((r: { email: string }) => r.email), ['stranger@example.org']);
+
+  const withdrawn = await call('DELETE', '/knox-county/requests/Stranger%40example.org', { user: 'stranger' });
+  assert.equal(withdrawn.status, 200);
+  assert.equal(db.requests.length, 0);
+  assert.equal((await call('DELETE', '/knox-county/requests/stranger%40example.org', { user: 'stranger' })).status, 404);
+  assert.deepEqual(db.rows.get('knox-county')!.editors, ['librarian@knoxdata.org', 'helper@knoxdata.org']);
+});
+
+test('request routes that do not exist', async () => {
+  const { call } = setup();
+  assert.equal((await call('PUT', '/knox-county/requests', { user: 'editor', body: {} })).status, 405);
+  assert.equal((await call('POST', '/knox-county/requests/a%40b.org/other', { user: 'editor' })).status, 405);
+  assert.equal((await call('POST', '/knox-county/requests/a%40b.org/accept/extra', { user: 'editor' })).status, 404);
 });
 
 test('admins approve (rebuilding the site) or reject pending libraries; nobody else can', async () => {
