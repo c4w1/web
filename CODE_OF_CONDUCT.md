@@ -53,7 +53,7 @@ It also applies when someone is officially representing CDL in public, for examp
 If you experience or witness behavior that violates this Code of Conduct, please tell us. You do not need proof, and you do not need to be the person directly affected.
 
 * Email the CDL project team at [info@communitydatalibraries.org](mailto:info@communitydatalibraries.org).
-* If your report concerns a member of the CDL project team, or you would prefer not to use that address, email the project's Principal Investigator at [klboles@utk.edu](mailto:klboles@utk.edu).
+* If your report concerns a member of the CDL project team, or you would prefer not to use that address, email the project's Principal Investigator at [cdl@utk.edu](mailto:cdl@utk.edu).
 * You may report on someone else's behalf, and you may ask that your name be withheld from the person the report concerns.
 
 It helps to include what happened, when and where it happened, and any links or screenshots.
