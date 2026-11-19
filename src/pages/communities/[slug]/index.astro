@@ -24,15 +24,15 @@ const data = community.data;
 const { libraryTitle, welcomeHeading, placeName } = communityDisplay(data);
 const catalogHref = libraryHref(data.slug, '/catalog/');
 
-// e.g. "Knox County, TN Community Data Library"; falls back to the place name,
-// then the entry's `name` (see communityDisplay).
+// e.g. "Knox County, TN Community Data Library"; falls back to the entry's
+// `name` only if the county or state is missing (see communityDisplay).
 const pageHeading = libraryTitle;
 const footerTitle = libraryTitle;
 
 // Tagline under the heading, the same wording for every library, e.g.
 // "Curated open data resources for Knox County, Tennessee" (no full stop: it is
 // a phrase, not a sentence). Falls back to the
-// place name if the county or state is missing. (The entry's own description is
+// library name if the county or state is missing. (The entry's own description is
 // still used for the page's meta description.)
 const taglinePlace =
   [data.county, data.state_name ?? data.state_code].every(Boolean)

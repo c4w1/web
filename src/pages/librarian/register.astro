@@ -19,26 +19,19 @@ const [addressBefore, addressAfter] = libraryHref(SLUG_MARK).split(SLUG_MARK);
     <div class="field">
       <label for="f-name">Library name <span class="required">*</span></label>
       <input id="f-name" name="name" type="text" maxlength={LIMITS.name} required placeholder="e.g. Knox County Data Library" />
+      <p class="field-hint">For your library list. The public site names it by county and state, e.g. "Knox County, TN Community Data Library".</p>
       <p class="field-error" data-error-for="name"></p>
     </div>
 
     <CountyPicker />
 
-    <div class="field-row">
-      <div class="field">
-        <label for="f-place">Place name</label>
-        <input id="f-place" name="place_name" type="text" maxlength={LIMITS.placeName} placeholder="e.g. Knoxville" />
-        <p class="field-hint">Used in "Data for …". Defaults to the library name.</p>
-        <p class="field-error" data-error-for="place_name"></p>
-      </div>
-      <div class="field">
-        <label for="f-slug">Web address</label>
-        <input id="f-slug" name="slug" type="text" maxlength={LIMITS.slug} pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="knox-county" />
-        <p class="field-hint">
-          <code>{addressBefore}<span id="slug-preview">…</span>{addressAfter}</code>. It can't be changed later.
-        </p>
-        <p class="field-error" data-error-for="slug"></p>
-      </div>
+    <div class="field">
+      <label for="f-slug">Web address</label>
+      <input id="f-slug" name="slug" type="text" maxlength={LIMITS.slug} pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="knox-county" />
+      <p class="field-hint">
+        <code>{addressBefore}<span id="slug-preview">…</span>{addressAfter}</code>. It can't be changed later.
+      </p>
+      <p class="field-error" data-error-for="slug"></p>
     </div>
 
     <div class="field">
@@ -93,7 +86,6 @@ const [addressBefore, addressAfter] = libraryHref(SLUG_MARK).split(SLUG_MARK);
         method: 'POST',
         body: {
           name: data.get('name'),
-          place_name: data.get('place_name'),
           slug: data.get('slug'),
           description: data.get('description'),
           county_fips: county.value(),

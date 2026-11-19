@@ -19,22 +19,16 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     <div class="field">
       <label for="f-name">Library name <span class="required">*</span></label>
       <input id="f-name" name="name" type="text" maxlength={LIMITS.name} required />
+      <p class="field-hint">For your library list. The public site names it by county and state, e.g. "Knox County, TN Community Data Library".</p>
       <p class="field-error" data-error-for="name"></p>
     </div>
 
     <CountyPicker />
 
-    <div class="field-row">
-      <div class="field">
-        <label for="f-place">Place name</label>
-        <input id="f-place" name="place_name" type="text" maxlength={LIMITS.placeName} />
-        <p class="field-error" data-error-for="place_name"></p>
-      </div>
-      <div class="field">
-        <label for="f-slug">Web address</label>
-        <input id="f-slug" type="text" readonly />
-        <p class="field-hint">Can't be changed.</p>
-      </div>
+    <div class="field">
+      <label for="f-slug">Web address</label>
+      <input id="f-slug" type="text" readonly />
+      <p class="field-hint">Can't be changed.</p>
     </div>
 
     <div class="field">
@@ -96,7 +90,6 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
       ? `Published at ${pages.community(lib.slug)}. Saving rebuilds the public page.`
       : 'Waiting for approval by the Community Data Libraries team. Changes are saved now and published once approved.';
     field('f-name').value = lib.name;
-    field('f-place').value = lib.place_name ?? '';
     field('f-slug').value = lib.slug;
     field('f-description').value = lib.description ?? '';
     county.set(lib.county_fips);
@@ -141,7 +134,7 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     try {
       const result = await api(path, {
         method: 'PUT',
-        body: { name: data.get('name'), place_name: data.get('place_name'), description: data.get('description'), county_fips: county.value() },
+        body: { name: data.get('name'), description: data.get('description'), county_fips: county.value() },
       });
       showFieldErrors(form, []);
       fill(result.library);
