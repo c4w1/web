@@ -29,6 +29,12 @@ Census vocabulary (`src/data/geo-vocabulary.json`), which also decides whether a
 
 `(community_slug, email, added_by, added_at)`: which Identity emails may edit each library.
 
+### `community_editor_requests`
+
+`(community_slug, email, message, requested_at)`: open requests to become a co-librarian
+(web#71). One per person per library; accepting moves the email to `community_editors`, declining
+or withdrawing deletes the row.
+
 ## How the build reads them
 
 `src/content.config.ts` loads the `communities` collection through
@@ -75,6 +81,9 @@ It is safe to re-run: it upserts by slug, keeps an existing approval, and never 
 | Register a library | Anyone logged in | Starts pending; the registrant becomes the first editor |
 | Edit a library | Its editors | The slug never changes; a new county must be in the vocabulary and not taken |
 | Add or remove editors | Its editors | At most 10 editors; never remove the last one |
+| Ask to become a co-librarian | Anyone logged in who isn't an editor | Approved libraries only; one open request each; a note of up to 500 characters; at most 20 open requests per library |
+| Accept or decline a request | Its editors | Accepting makes the requester an editor (the 10-editor limit applies) |
+| Withdraw a request | The requester | |
 | Approve or reject a pending library | Identity role `admin` | Rejecting deletes the library |
 
 ## The librarian function
@@ -90,6 +99,10 @@ under `/api/librarian/libraries`:
 | `PUT /:slug` | editors | Edit |
 | `POST /:slug/editors` | editors | Add an editor `{ email }` |
 | `DELETE /:slug/editors/:email` | editors | Remove an editor |
+| `GET /:slug/requests` | logged in | Editors: open co-librarian requests. Anyone else: the library's name and their own request |
+| `POST /:slug/requests` | logged in | Ask to become a co-librarian `{ message? }`; emails the editors when Resend is set up |
+| `POST /:slug/requests/:email/accept` | editors | Accept; the requester becomes an editor |
+| `DELETE /:slug/requests/:email` | editors, the requester | Decline someone's request, or withdraw your own |
 | `POST /:slug/approve` | admins | Approve |
 | `DELETE /:slug` | admins | Reject a pending library |
 
@@ -108,6 +121,10 @@ under `/api/librarian/libraries`:
   - Without the variable, the write succeeds and the rebuild is skipped with a warning.
 - **Contact form:** the `library-contact` function forwards a visitor's message to an approved
   library's editors (Resend), without showing their emails.
+- **Co-librarian requests:** a new request is emailed to the library's editors with the
+  requester as Reply-To, using the contact form's `RESEND_API_KEY` and `CONTACT_FROM_EMAIL`. A
+  failed or unconfigured email doesn't fail the request; editors also see it on the edit page.
+  Requests never rebuild the site.
 
 ## Pages
 
@@ -116,7 +133,8 @@ under `/api/librarian/libraries`:
 | `/librarian/login/` | Log in, create an account, reset a password, and handle the links in Identity emails |
 | `/librarian/` | My libraries; pending approvals for admins |
 | `/librarian/register/` | Register a library: name, county (searchable list from the vocabulary), place name, web address, description |
-| `/librarian/<slug>/edit/` | Edit details and editors |
+| `/librarian/<slug>/edit/` | Edit details and editors; accept or decline co-librarian requests |
+| `/librarian/join/?slug=<slug>` | Ask to become a co-librarian (linked from each library's contact page, and from the register page when a county is taken) |
 
 - **Public library pages** are `/communities/<slug>/` and `/communities/<slug>/catalog/`. With
   `PUBLIC_LIBRARY_DOMAIN` set, they are served at `https://<slug>.<domain>/` and `/catalog/`

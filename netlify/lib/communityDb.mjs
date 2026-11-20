@@ -1,5 +1,5 @@
 /**
- * Community libraries and their editors in Netlify Database, for the librarian
+ * Community libraries, their editors and co-librarian requests in Netlify Database, for the librarian
  * functions (writes, and the reads those writes need). The build reads published
  * libraries separately (src/lib/community/communityStore.mjs).
  *
@@ -142,6 +142,53 @@ export function createCommunityDb(pool) {
         [slug, email]
       );
       if (removed.length === 0) throw new ConflictError(`Could not remove ${email} from ${slug}`);
+    },
+
+    /** Open co-librarian requests for a library, oldest first (web#71). */
+    async listRequests(slug) {
+      return (
+        await rows(
+          'SELECT email, message, requested_at FROM community_editor_requests WHERE community_slug = $1 ORDER BY requested_at, email',
+          [slug]
+        )
+      ).map((r) => ({ email: r.email, message: r.message ?? null, requested_at: new Date(r.requested_at).toISOString() }));
+    },
+
+    /** The libraries `email` has asked to join, with their names. */
+    async listRequestsBy(email) {
+      return (
+        await rows(
+          `SELECT r.community_slug AS slug, c.name, r.requested_at
+           FROM community_editor_requests r JOIN communities c ON c.slug = r.community_slug
+           WHERE r.email = $1 ORDER BY r.requested_at`,
+          [email]
+        )
+      ).map((r) => ({ slug: r.slug, name: r.name, requested_at: new Date(r.requested_at).toISOString() }));
+    },
+
+    async addRequest(slug, email, message) {
+      await rows('INSERT INTO community_editor_requests (community_slug, email, message) VALUES ($1, $2, $3)', [slug, email, message]);
+    },
+
+    /** Decline or withdraw a request. */
+    async deleteRequest(slug, email) {
+      const removed = await rows(
+        'DELETE FROM community_editor_requests WHERE community_slug = $1 AND email = $2 RETURNING email',
+        [slug, email]
+      );
+      if (removed.length === 0) throw new ConflictError(`No request from ${email} for ${slug}`);
+    },
+
+    /** Accept a request: the requester becomes an editor, in one transaction. */
+    async acceptRequest(slug, email, acceptedBy) {
+      return transaction(async (query) => {
+        const removed = await query(
+          'DELETE FROM community_editor_requests WHERE community_slug = $1 AND email = $2 RETURNING email',
+          [slug, email]
+        );
+        if (removed.length === 0) throw new ConflictError(`No request from ${email} for ${slug}`);
+        await query('INSERT INTO community_editors (community_slug, email, added_by) VALUES ($1, $2, $3)', [slug, email, acceptedBy]);
+      });
     },
 
     async approve(slug, approvedBy) {

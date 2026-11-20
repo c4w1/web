@@ -118,7 +118,7 @@ A Netlify build hook (Site configuration → Build & deploy → Build hooks, bra
 ### `RESEND_API_KEY` and `CONTACT_FROM_EMAIL`
 **Required for the contact form · Scope: Functions**
 
-The contact form sends through Resend, like the metadata editor's sign-in emails. `CONTACT_FROM_EMAIL` is the sender, on a verified domain, for example `Community Data Libraries <librarians@your-domain.org>`. Without these (or without a database), the form says it isn't set up yet.
+The contact form sends through Resend, like the metadata editor's sign-in emails. `CONTACT_FROM_EMAIL` is the sender, on a verified domain, for example `Community Data Libraries <librarians@your-domain.org>`. Without these (or without a database), the form says it isn't set up yet. The librarian function uses the same pair to email a library's editors when someone asks to become a co-librarian; without them, requests still work and editors see them in the portal.
 
 Identity settings (registration open, the `admin` role for approvers) are site settings, not variables; see the [setup checklist](netlify-setup-checklist.md).
 

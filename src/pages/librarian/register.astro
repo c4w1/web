@@ -106,8 +106,19 @@ const [addressBefore, addressAfter] = libraryHref(SLUG_MARK).split(SLUG_MARK);
       (document.getElementById('registered-edit') as HTMLAnchorElement).href = pages.edit(library.slug);
       document.getElementById('registered')!.hidden = false;
     } catch (err) {
-      if (err instanceof ApiError) showFieldErrors(form, err.errors, err.message);
-      else showStatus(err instanceof Error ? err.message : String(err), 'error');
+      if (err instanceof ApiError) {
+        showFieldErrors(form, err.errors, err.message);
+        // The county already has a published library: offer to ask to join it (web#71).
+        const taken = err.errors.find((e) => e.field === 'county_fips' && e.existing && !e.existing.pending);
+        const slot = form.querySelector<HTMLElement>('[data-error-for="county_fips"]');
+        if (taken?.existing && slot) {
+          const join = Object.assign(document.createElement('a'), {
+            href: pages.join(taken.existing.slug),
+            textContent: `Ask to join ${taken.existing.name}`,
+          });
+          slot.append(' ', join);
+        }
+      } else showStatus(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       button.disabled = false;
     }

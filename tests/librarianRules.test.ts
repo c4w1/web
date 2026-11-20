@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 import { createVocabulary } from '../src/lib/community/geoVocabulary.mjs';
 import {
   checkAddEditor,
+  checkAnswerRequest,
+  checkJoinRequest,
+  checkWithdrawRequest,
+  LIMITS,
   checkRegistration,
   checkRemoveEditor,
   checkReview,
@@ -156,6 +160,40 @@ test('editors can remove editors, themselves included, but never the last one', 
 });
 
 // ── Approval ─────────────────────────────────────────────────
+
+test('anyone logged in may ask once to join a published library they do not edit (web#71)', () => {
+  const ask = (overrides = {}) => checkJoinRequest({ community: knox, editors: knoxEditors, requests: [], user: stranger, message: '', ...overrides });
+  assert.deepEqual(ask({ message: '  Hello  ' }), { ok: true, email: 'stranger@example.org', message: 'Hello' });
+  assert.equal((ask() as { message: string | null }).message, null, 'an empty note is stored as null');
+  assert.equal(ask({ user: null }).status, 403);
+  assert.equal(ask({ user: { email: 'Librarian@KnoxData.org', roles: [] } }).status, 409, 'editors are already in');
+  assert.equal(ask({ requests: [{ email: 'STRANGER@example.org' }] }).status, 409, 'one open request each');
+  assert.equal(ask({ community: { ...knox, approved: false } }).status, 404, 'pending libraries are not open yet');
+  assert.equal(ask({ message: 'x'.repeat(LIMITS.requestMessage + 1) }).status, 400);
+  const full = Array.from({ length: LIMITS.editors }, (_, i) => `e${i}@x.org`);
+  assert.equal(ask({ editors: full }).status, 409, 'no room for another editor');
+  const flooded = Array.from({ length: LIMITS.requests }, (_, i) => ({ email: `r${i}@x.org` }));
+  assert.equal(ask({ requests: flooded }).status, 409, 'too many open requests');
+});
+
+test('only editors accept or decline requests; accepting respects the editor limit', () => {
+  const requests = [{ email: 'stranger@example.org' }];
+  const answer = (overrides = {}) =>
+    checkAnswerRequest({ editors: knoxEditors, requests, user: editor, email: 'Stranger@Example.org', accept: true, ...overrides });
+  assert.deepEqual(answer(), { ok: true, email: 'stranger@example.org' });
+  assert.equal(answer({ user: stranger }).status, 403);
+  assert.equal(answer({ user: admin }).status, 403, 'admins who are not editors cannot answer');
+  assert.equal(answer({ email: 'other@example.org' }).status, 404);
+  const full = [editor.email, ...Array.from({ length: LIMITS.editors - 1 }, (_, i) => `e${i}@x.org`)];
+  assert.equal(answer({ editors: full }).status, 409);
+  assert.equal(answer({ editors: full, accept: false }).ok, true, 'declining is always possible');
+});
+
+test('people withdraw only their own request', () => {
+  const requests = [{ email: 'stranger@example.org' }];
+  assert.deepEqual(checkWithdrawRequest({ requests, user: stranger }), { ok: true, email: 'stranger@example.org' });
+  assert.equal(checkWithdrawRequest({ requests, user: editor }).status, 404);
+});
 
 test('only admins approve or reject, and only libraries that are waiting', () => {
   const pending = { ...knox, approved: false };
