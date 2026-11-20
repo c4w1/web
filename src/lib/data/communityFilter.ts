@@ -208,10 +208,15 @@ export function topicalTags(entry: CatalogEntryData, community?: CommunityGeo): 
   return entry.tags.filter((tag) => !geoKeys.includes(slugify(tag)));
 }
 
-/** Display strings for a community library, derived from its configuration. */
+/**
+ * Display strings for a community library. Libraries are named by county and
+ * state (web#66), never by a librarian-chosen place name, e.g. "Knox County,
+ * TN Community Data Library". `place_name` may still be stored for older
+ * libraries but is not shown. Falls back to the library's `name` only when the
+ * county or state is missing.
+ */
 export interface CommunityNames {
   name: string;
-  place_name?: string;
   county?: string;
   state_code?: string;
 }
@@ -221,20 +226,14 @@ export function communityDisplay(community: CommunityNames): {
   libraryTitle: string;
   welcomeHeading: string;
 } {
-  const place = community.place_name?.trim();
   const county = community.county?.trim();
   const state = community.state_code?.trim();
+  // e.g. "Knox County, TN"
+  const placeName = county && state ? `${county}, ${state}` : community.name;
   return {
-    placeName: place || community.name,
-    // e.g. "Knox County, TN Community Data Library"; falls back to the place
-    // name ("Knoxville Community Data Library"), then the configured name.
-    libraryTitle:
-      county && state
-        ? `${county}, ${state} Community Data Library`
-        : place
-          ? `${place} Community Data Library`
-          : community.name,
-    welcomeHeading: `Welcome to ${place || community.name}`,
+    placeName,
+    libraryTitle: county && state ? `${placeName} Community Data Library` : community.name,
+    welcomeHeading: `Welcome to ${placeName}`,
   };
 }
 

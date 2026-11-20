@@ -26,11 +26,6 @@ collections:
         widget: string
         required: true
         hint: 'Full library name shown in listings, e.g. "Knox County Data Library".'
-      - label: Place Name
-        name: place_name
-        widget: string
-        required: false
-        hint: 'Short place name used in "Welcome to ..." and "... Community Data Library", e.g. "Knoxville". Defaults to the library name.'
       - label: Slug
         name: slug
         widget: string

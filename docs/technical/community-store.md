@@ -16,7 +16,8 @@ published.
 |---|---|
 | `slug` | Primary key. Never changes; it is in the page URL. |
 | `name` | Required. |
-| `place_name`, `description` | Optional. |
+| `description` | Optional. |
+| `place_name` | Optional and no longer shown: pages name a library by its county and state, e.g. "Knox County, TN Community Data Library" (web#66). The portal no longer asks for it. |
 | `county_fips` | 5 digits. Unique: one library per county. |
 | `created_by` | The registrant's email. |
 | `approved_at`, `approved_by` | `NULL` until an admin approves the library. Only approved libraries are built into the site. |

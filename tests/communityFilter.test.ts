@@ -133,35 +133,44 @@ test('topicalTags falls back to non-geographic tags when themes are empty', () =
   assert.deepEqual(topicalTags(entry(), knox), ['education']);
 });
 
-test('communityDisplay derives heading and library title from place_name', () => {
+test('communityDisplay names the library by county and state', () => {
   assert.deepEqual(
-    communityDisplay({ name: 'Knox County Data Library', place_name: 'Knoxville' }),
+    communityDisplay({ name: 'Knox County Data Library', county: 'Knox County', state_code: 'TN' }),
     {
-      placeName: 'Knoxville',
-      libraryTitle: 'Knoxville Community Data Library',
-      welcomeHeading: 'Welcome to Knoxville',
+      placeName: 'Knox County, TN',
+      libraryTitle: 'Knox County, TN Community Data Library',
+      welcomeHeading: 'Welcome to Knox County, TN',
     }
   );
 });
 
-test('communityDisplay titles the library by county and state when it has them', () => {
+test('communityDisplay ignores a stored place_name (web#66)', () => {
+  const knoxville = {
+    name: 'Knox County Data Library',
+    place_name: 'Knoxville',
+    county: 'Knox County',
+    state_code: 'TN',
+  };
+  const display = communityDisplay(knoxville);
+  assert.equal(display.placeName, 'Knox County, TN');
+  assert.equal(display.libraryTitle, 'Knox County, TN Community Data Library');
+  assert.ok(!Object.values(display).some((text) => text.includes('Knoxville')));
+});
+
+test('communityDisplay trims county and state', () => {
   assert.equal(
-    communityDisplay({
-      name: 'Knox County Data Library',
-      place_name: 'Knoxville',
-      county: 'Knox County',
-      state_code: 'TN',
-    }).libraryTitle,
-    'Knox County, TN Community Data Library'
+    communityDisplay({ name: 'X', county: ' Davidson County ', state_code: ' TN ' }).libraryTitle,
+    'Davidson County, TN Community Data Library'
   );
 });
 
-test('communityDisplay falls back to the library name without place_name', () => {
+test('communityDisplay falls back to the library name without county and state', () => {
   assert.deepEqual(communityDisplay({ name: 'Oak Ridge Data Library' }), {
     placeName: 'Oak Ridge Data Library',
     libraryTitle: 'Oak Ridge Data Library',
     welcomeHeading: 'Welcome to Oak Ridge Data Library',
   });
+  assert.equal(communityDisplay({ name: 'Oak Ridge Data Library', county: 'Anderson County' }).libraryTitle, 'Oak Ridge Data Library');
 });
 
 // ── Canonical coverage (SQLite export) ──────────────────────────────────────
