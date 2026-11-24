@@ -82,6 +82,12 @@ export function createCommunityDb(pool) {
       return (await rows(`SELECT ${COMMUNITY_COLUMNS} FROM communities ORDER BY name`)).map(toCommunity);
     },
 
+    /** Every library with its editors, for admins managing co-librarians. */
+    async listAllWithEditors() {
+      const all = await rows(`SELECT ${COMMUNITY_COLUMNS} FROM communities ORDER BY name`);
+      return withEditors(all.map(toCommunity));
+    },
+
     /** One library with its editors, or null. */
     async get(slug) {
       const [row] = await rows(`SELECT ${COMMUNITY_COLUMNS} FROM communities WHERE slug = $1`, [slug]);
@@ -128,8 +134,12 @@ export function createCommunityDb(pool) {
       return toCommunity(row);
     },
 
+    /** Add an editor; any open co-librarian request of theirs for this library is settled with it. */
     async addEditor(slug, email, addedBy) {
-      await rows('INSERT INTO community_editors (community_slug, email, added_by) VALUES ($1, $2, $3)', [slug, email, addedBy]);
+      return transaction(async (query) => {
+        await query('DELETE FROM community_editor_requests WHERE community_slug = $1 AND email = $2', [slug, email]);
+        await query('INSERT INTO community_editors (community_slug, email, added_by) VALUES ($1, $2, $3)', [slug, email, addedBy]);
+      });
     },
 
     /** Remove an editor unless they are the last one (checked again here against races). */
@@ -152,6 +162,23 @@ export function createCommunityDb(pool) {
           [slug]
         )
       ).map((r) => ({ email: r.email, message: r.message ?? null, requested_at: new Date(r.requested_at).toISOString() }));
+    },
+
+    /** Every open co-librarian request, across libraries, oldest first (for admins). */
+    async listAllRequests() {
+      return (
+        await rows(
+          `SELECT r.community_slug AS slug, c.name, r.email, r.message, r.requested_at
+           FROM community_editor_requests r JOIN communities c ON c.slug = r.community_slug
+           ORDER BY r.requested_at, r.email`
+        )
+      ).map((r) => ({
+        slug: r.slug,
+        name: r.name,
+        email: r.email,
+        message: r.message ?? null,
+        requested_at: new Date(r.requested_at).toISOString(),
+      }));
     },
 
     /** The libraries `email` has asked to join, with their names. */

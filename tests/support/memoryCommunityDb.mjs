@@ -21,6 +21,9 @@ export function createMemoryCommunityDb(seed = [], requestSeed = []) {
     async listAll() {
       return [...rows.values()].map(({ community }) => ({ ...community }));
     },
+    async listAllWithEditors() {
+      return [...rows.values()].map(out);
+    },
     async get(slug) {
       const row = rows.get(slug);
       return row ? out(row) : null;
@@ -45,6 +48,8 @@ export function createMemoryCommunityDb(seed = [], requestSeed = []) {
     async addEditor(slug, email) {
       const row = rows.get(slug);
       if (!row || row.editors.includes(email)) throw new ConflictError('duplicate editor');
+      const i = findRequest(slug, email);
+      if (i !== -1) requests.splice(i, 1);
       row.editors.push(email);
     },
     async removeEditor(slug, email) {
@@ -54,6 +59,11 @@ export function createMemoryCommunityDb(seed = [], requestSeed = []) {
     },
     async listRequests(slug) {
       return requests.filter((r) => r.slug === slug).map(({ email, message, requested_at }) => ({ email, message, requested_at }));
+    },
+    async listAllRequests() {
+      return requests
+        .filter((r) => rows.has(r.slug))
+        .map((r) => ({ slug: r.slug, name: rows.get(r.slug).community.name, email: r.email, message: r.message, requested_at: r.requested_at }));
     },
     async listRequestsBy(email) {
       return requests

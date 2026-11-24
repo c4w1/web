@@ -52,11 +52,12 @@ Community librarians register and maintain their library at `/librarian/` (`/web
 - **Accounts**: Netlify Identity through `@netlify/identity`, loaded only on `/librarian/` pages.
 - **Registering**: anyone logged in can register a library and pick its county from a searchable list. It starts pending, and the registrant is its first editor. One library per county.
 - **Approval**: users with the Identity role `admin` approve or reject pending libraries on `/librarian/`.
-- **Editing**: only a library's editors can edit it or add and remove editors (never the last one).
+- **Editing**: only a library's editors can edit it. Its editors can add and remove editors (never the last one) and answer co-librarian requests.
+- **Co-librarians (admins)**: admins see every open co-librarian request on `/librarian/` and approve or deny it with an optional note to the requester. They can also add or remove co-librarians on any library from its edit page, without a request.
 - **Rebuilds**: approving a library, or changing a public field of an approved one, calls the build hook in `COMMUNITY_BUILD_HOOK_URL`, so the static pages rebuild. Each call is a production deploy; see the cost notes in [community-store.md](docs/technical/community-store.md#costs).
 - **Contact form**: each library page has a *Contact the librarian* form. The `library-contact` function emails the editors through Resend without showing their addresses.
 
-Code: `netlify/functions/librarian-api.mjs` and `library-contact.mjs`, with helpers in `netlify/lib/`. The rules are in `src/lib/community/librarianRules.mjs` and are covered by `npm test`. One-time seed from the Markdown files: `npm run db:seed`.
+Code: `netlify/functions/librarian-api.mjs` and `library-contact.mjs`, with helpers in `netlify/lib/`. The rules are in `src/lib/community/librarianRules.mjs` and are covered by `npm test`. Browser tests for the portal are in `tests/e2e` (`npx playwright install chromium` once, then `npm run test:e2e`). One-time seed from the Markdown files: `npm run db:seed`.
 
 Details: [docs/technical/community-store.md](docs/technical/community-store.md). Netlify settings to click: [docs/technical/netlify-setup-checklist.md](docs/technical/netlify-setup-checklist.md).
 

@@ -10,7 +10,9 @@
  * are the emails in community_editors; anyone logged in may register a library
  * (and becomes its first editor); only users with the Identity role "admin"
  * approve or reject new libraries. Anyone logged in may ask to become a co-librarian
- * (an editor) of an approved library; its editors accept or decline (web#71).
+ * (an editor) of an approved library; its editors accept or decline (web#71). Admins can
+ * also answer any library's requests and add or remove its editors directly, so the team
+ * can manage co-librarians without being an editor of every library.
  */
 
 import { describeCounty } from './geoVocabulary.mjs';
@@ -38,6 +40,8 @@ export const LIMITS = {
   slug: 60,
   editors: 10,
   requestMessage: 500,
+  // The optional note sent back to a requester when their request is answered.
+  answerNote: 500,
   // Open co-librarian requests a library can have at once (web#71), so a library
   // can't be flooded with them.
   requests: 20,
@@ -76,6 +80,11 @@ export function isEditor(editors, email) {
 
 export function isAdmin(user) {
   return Boolean(user?.roles?.includes(ADMIN_ROLE));
+}
+
+/** Whether `user` may change a library's editors and answer its requests: its editors, or an admin. */
+export function canManageEditors(editors, user) {
+  return isEditor(editors, user?.email) || isAdmin(user);
 }
 
 function text(value) {
@@ -189,9 +198,9 @@ export function checkUpdate({ current, editors, input, user, existing, vocabular
   return result({ community }, validateCommunity(community, vocabulary), findDuplicates(community, others));
 }
 
-/** Adding `email` as an editor; only existing editors may add one. */
+/** Adding `email` as an editor: existing editors, or an admin granting co-librarian rights directly. */
 export function checkAddEditor({ editors, user, email }) {
-  if (!isEditor(editors, user?.email)) return deny(403, 'Only this library’s editors can add editors.');
+  if (!canManageEditors(editors, user)) return deny(403, 'Only this library’s editors can add editors.');
   const target = normalizeEmail(email);
   if (!isValidEmail(target)) return deny(400, 'Enter a valid email address.', 'email');
   if (isEditor(editors, target)) return deny(409, `${target} is already an editor.`, 'email');
@@ -199,9 +208,12 @@ export function checkAddEditor({ editors, user, email }) {
   return { ok: true, email: target };
 }
 
-/** Removing `email` as an editor (editors may remove themselves); a library keeps at least one. */
+/**
+ * Removing `email` as an editor: editors (themselves included) or an admin. A library
+ * always keeps at least one editor, even when an admin removes one.
+ */
 export function checkRemoveEditor({ editors, user, email }) {
-  if (!isEditor(editors, user?.email)) return deny(403, 'Only this library’s editors can remove editors.');
+  if (!canManageEditors(editors, user)) return deny(403, 'Only this library’s editors can remove editors.');
   const target = normalizeEmail(email);
   if (!isEditor(editors, target)) return deny(404, `${target} is not an editor of this library.`, 'email');
   if (editors.length <= 1) return deny(409, 'A library needs at least one editor. Add another editor first.', 'email');
@@ -233,17 +245,20 @@ export function checkJoinRequest({ community, editors, requests, user, message }
 }
 
 /**
- * Accepting or declining someone's co-librarian request: the library's editors
- * only. Accepting adds them as an editor, so the editor limit applies.
+ * Accepting or declining someone's co-librarian request: the library's editors or an
+ * admin. Accepting adds them as an editor, so the editor limit applies. An optional
+ * `note` goes back to the requester with the answer.
  */
-export function checkAnswerRequest({ editors, requests, user, email, accept }) {
-  if (!isEditor(editors, user?.email)) return deny(403, 'Only this library’s editors can answer co-librarian requests.');
+export function checkAnswerRequest({ editors, requests, user, email, accept, note }) {
+  if (!canManageEditors(editors, user)) return deny(403, 'Only this library’s editors can answer co-librarian requests.');
   const target = normalizeEmail(email);
   if (!hasRequest(requests, target)) return deny(404, `${target} has no open request for this library.`, 'email');
   if (accept && editors.length >= LIMITS.editors) {
     return deny(409, `A library can have at most ${LIMITS.editors} editors. Remove one before accepting.`, 'email');
   }
-  return { ok: true, email: target };
+  const text = String(note ?? '').trim();
+  if (text.length > LIMITS.answerNote) return deny(400, `Keep the note to ${LIMITS.answerNote} characters or fewer.`, 'note');
+  return { ok: true, email: target, note: text || null };
 }
 
 /** Withdrawing your own co-librarian request. */

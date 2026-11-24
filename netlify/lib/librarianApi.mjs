@@ -7,28 +7,32 @@
  * librarian reads and writes; they never read or filter datasets.
  *
  * Routes (all under /api/librarian/libraries):
- *   GET    /                         libraries the user edits (+ pending ones, for admins) and the
- *                                     co-librarian requests the user has open
+ *   GET    /                         libraries the user edits and the co-librarian requests the
+ *                                     user has open; for admins also pending libraries, every
+ *                                     library, and every open co-librarian request
  *   POST   /                         register a library (pending; the user becomes its first editor)
- *   GET    /:slug                    one library with its editors (and open requests, for editors)
+ *   GET    /:slug                    one library with its editors (and open requests, for editors and admins)
  *   PUT    /:slug                    edit a library (editors)
- *   POST   /:slug/editors            add an editor { email } (editors)
- *   DELETE /:slug/editors/:email     remove an editor (editors; never the last one)
- *   GET    /:slug/requests           editors: open co-librarian requests; anyone else: the
- *                                     published library's name and their own request, if any
+ *   POST   /:slug/editors            add an editor { email } (editors, admins)
+ *   DELETE /:slug/editors/:email     remove an editor (editors, admins; never the last one)
+ *   GET    /:slug/requests           editors and admins: open co-librarian requests; anyone else:
+ *                                     the published library's name and their own request, if any
  *   POST   /:slug/requests           ask to become a co-librarian { message? } (anyone logged in)
- *   POST   /:slug/requests/:email/accept   accept a request; the requester becomes an editor (editors)
- *   DELETE /:slug/requests/:email    decline a request (editors) or withdraw your own
+ *   POST   /:slug/requests/:email/accept   accept a request { note? }; the requester becomes an
+ *                                     editor (editors, admins)
+ *   DELETE /:slug/requests/:email    decline a request { note? } (editors, admins) or withdraw your own
  *   POST   /:slug/approve            approve a pending library (admins)
  *   DELETE /:slug                    reject a pending library (admins)
  *
  * Writes check the Origin header (the login is a cookie). Approving a library, or
  * changing a public field of an approved one, rebuilds the site through the build hook.
- * A new co-librarian request is emailed to the library's editors when email is set up.
+ * A new co-librarian request is emailed to the library's editors when email is set up, and
+ * the requester is emailed the answer (with the optional note) when it is accepted or declined.
  */
 
 import { describeCounty } from '../../src/lib/community/geoVocabulary.mjs';
 import {
+  canManageEditors,
   checkAddEditor,
   checkAnswerRequest,
   checkJoinRequest,
@@ -46,6 +50,20 @@ import { ConflictError } from './communityDb.mjs';
 
 const MAX_BODY_BYTES = 20_000;
 const PREFIX = '/api/librarian/libraries';
+
+/** A JSON body that may also be left out (an empty body reads as {}). */
+async function optionalBody(request) {
+  const raw = await request.text();
+  if (raw.trim() === '') return { value: {} };
+  if (raw.length > MAX_BODY_BYTES) return { response: error(413, 'Request is too large.') };
+  try {
+    const value = JSON.parse(raw);
+    if (value && typeof value === 'object' && !Array.isArray(value)) return { value };
+  } catch {
+    // fall through
+  }
+  return { response: error(400, 'Send the details as JSON.') };
+}
 
 function json(status, payload) {
   return new Response(JSON.stringify(payload), {
@@ -102,6 +120,29 @@ export function requestEmail({ library, email, message, editPage }) {
 }
 
 /**
+ * The email a requester gets when their co-librarian request is answered. It names the
+ * library, not who answered, so editors' and admins' emails stay private.
+ */
+export function answerEmail({ library, email, accepted, note, editPage }) {
+  return {
+    to: [email],
+    subject: accepted
+      ? `You are now a co-librarian of ${library.name}`
+      : `Your request to become a co-librarian of ${library.name}`,
+    text: [
+      accepted
+        ? `Your request to become a co-librarian (an editor) of ${library.name} on the Community Data Libraries site was accepted.`
+        : `Your request to become a co-librarian (an editor) of ${library.name} on the Community Data Libraries site was declined.`,
+      ...(note ? ['', 'A note about your request:', '', note] : []),
+      ...(accepted ? ['', `You can edit the library in the librarian portal: ${editPage}`] : []),
+      '',
+      '---',
+      'You received this because you asked to join this library.',
+    ].join('\n'),
+  };
+}
+
+/**
  * @param {object} deps
  * @param {(request: Request) => Promise<{ email: string, roles: string[] } | null>} deps.verifyUser
  * @param {(() => ReturnType<typeof import('./communityDb.mjs').createCommunityDb>) | null} deps.db
@@ -138,6 +179,20 @@ export function createLibrarianHandler({ verifyUser, db: openDb, rebuild, vocabu
     if (parts.length > 4) return error(404, 'Not found');
     const method = request.method;
 
+    /** Email the requester the answer to their request; false when email isn't set up or fails. */
+    async function notifyRequester(request, library, check, accepted) {
+      if (!send) return false;
+      try {
+        const editPage = editPageUrl(new URL(request.url).origin, library.slug);
+        await send(answerEmail({ library, email: check.email, accepted, note: check.note, editPage }));
+        return true;
+      } catch (err) {
+        // The answer is saved either way.
+        console.error('librarian-api: answer email failed:', err);
+        return false;
+      }
+    }
+
     async function body() {
       const parsed = await readJson(request);
       if (parsed.tooLarge) return { response: error(413, 'Request is too large.') };
@@ -156,6 +211,10 @@ export function createLibrarianHandler({ verifyUser, db: openDb, rebuild, vocabu
             libraries: (await db.listForEditor(user.email)).map(view),
             pending: admin ? (await db.listPending()).map(view) : [],
             requests: await db.listRequestsBy(user.email),
+            // Admins manage co-librarians across every library.
+            ...(admin
+              ? { allLibraries: (await db.listAllWithEditors()).map(view), allRequests: await db.listAllRequests() }
+              : {}),
           });
         }
         if (method === 'POST') {
@@ -172,13 +231,14 @@ export function createLibrarianHandler({ verifyUser, db: openDb, rebuild, vocabu
       const current = await db.get(slug);
       if (!current) return error(404, 'No such library.');
       const editor = isEditor(current.editors, user.email);
+      const manager = canManageEditors(current.editors, user);
 
       // ── One library ──────────────────────────────────────────────
       if (!sub) {
         if (method === 'GET') {
-          if (!editor && !isAdmin(user)) return error(403, 'Only this library’s editors can see its settings.');
-          const requests = editor ? await db.listRequests(slug) : [];
-          return json(200, { library: view(current), requests, canEdit: editor, isAdmin: isAdmin(user) });
+          if (!manager) return error(403, 'Only this library’s editors can see its settings.');
+          const requests = await db.listRequests(slug);
+          return json(200, { library: view(current), requests, canEdit: editor, canManageEditors: manager, isAdmin: isAdmin(user) });
         }
         if (method === 'PUT') {
           const input = await body();
@@ -217,7 +277,7 @@ export function createLibrarianHandler({ verifyUser, db: openDb, rebuild, vocabu
         const requests = await db.listRequests(slug);
         const action = parts[3];
         if (method === 'GET' && !subject) {
-          if (editor) return json(200, { requests });
+          if (manager) return json(200, { requests });
           if (!current.approved) return error(404, 'This library isn’t taking co-librarian requests yet.');
           const mine = requests.find((r) => r.email === user.email) ?? null;
           return json(200, { library: { slug, name: current.name }, request: mine });
@@ -242,23 +302,32 @@ export function createLibrarianHandler({ verifyUser, db: openDb, rebuild, vocabu
           return json(201, { request: { email: check.email, message: check.message }, notified });
         }
         if (method === 'POST' && subject && action === 'accept' && parts.length === 4) {
-          const check = checkAnswerRequest({ editors: current.editors, requests, user, email: subject, accept: true });
+          const input = await optionalBody(request);
+          if (input.response) return input.response;
+          const check = checkAnswerRequest({ editors: current.editors, requests, user, email: subject, accept: true, note: input.value.note });
           if (!check.ok) return refused(check);
           await db.acceptRequest(slug, check.email, user.email);
           return json(200, {
             editors: [...current.editors, check.email],
             requests: requests.filter((r) => r.email !== check.email),
+            notified: await notifyRequester(request, current, check, true),
           });
         }
         if (method === 'DELETE' && subject && parts.length === 3) {
-          // Your own request: withdraw it. Someone else's: decline it (editors only).
+          // Your own request: withdraw it. Someone else's: decline it (editors and admins).
           const own = subject.toLowerCase() === user.email;
+          const input = own ? { value: {} } : await optionalBody(request);
+          if (input.response) return input.response;
           const check = own
             ? checkWithdrawRequest({ requests, user })
-            : checkAnswerRequest({ editors: current.editors, requests, user, email: subject, accept: false });
+            : checkAnswerRequest({ editors: current.editors, requests, user, email: subject, accept: false, note: input.value.note });
           if (!check.ok) return refused(check);
           await db.deleteRequest(slug, check.email);
-          return json(200, own ? { withdrawn: slug } : { requests: requests.filter((r) => r.email !== check.email) });
+          if (own) return json(200, { withdrawn: slug });
+          return json(200, {
+            requests: requests.filter((r) => r.email !== check.email),
+            notified: await notifyRequester(request, current, check, false),
+          });
         }
         return error(405, 'Method not allowed');
       }

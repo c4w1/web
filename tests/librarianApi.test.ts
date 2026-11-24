@@ -239,6 +239,84 @@ test('editors decline requests; requesters withdraw their own; nobody else can',
   assert.deepEqual(db.rows.get('knox-county')!.editors, ['librarian@knoxdata.org', 'helper@knoxdata.org']);
 });
 
+test('admins see every open request and approve or deny them with a note; the requester is emailed', async () => {
+  const sent: Email[] = [];
+  const { call, db } = setup({ send: async (email: Email) => void sent.push(email) });
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: { message: 'Hi' } });
+  sent.length = 0;
+
+  const dashboard = await call('GET', '', { user: 'admin' });
+  assert.deepEqual(
+    dashboard.body.allRequests.map((r: { slug: string; name: string; email: string; message: string }) => [r.slug, r.name, r.email, r.message]),
+    [['knox-county', 'Knox County Data Library', 'stranger@example.org', 'Hi']]
+  );
+  assert.deepEqual(dashboard.body.allLibraries.map((l: { slug: string }) => l.slug).sort(), ['anderson', 'knox-county']);
+  const notAdmin = await call('GET', '', { user: 'editor' });
+  assert.equal(notAdmin.body.allRequests, undefined, 'only admins get every request');
+  assert.equal(notAdmin.body.allLibraries, undefined);
+
+  const settings = await call('GET', '/knox-county', { user: 'admin' });
+  assert.equal(settings.status, 200);
+  assert.equal(settings.body.canEdit, false);
+  assert.equal(settings.body.canManageEditors, true);
+  assert.equal(settings.body.requests.length, 1, 'admins see a library’s requests');
+
+  assert.equal((await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'admin', body: { note: 'x'.repeat(501) } })).status, 400);
+  const approved = await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'admin', body: { note: 'Welcome aboard' } });
+  assert.equal(approved.status, 200);
+  assert.equal(approved.body.notified, true);
+  assert.deepEqual(db.rows.get('knox-county')!.editors, ['librarian@knoxdata.org', 'helper@knoxdata.org', 'stranger@example.org']);
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].to, ['stranger@example.org']);
+  assert.match(sent[0].subject, /now a co-librarian of Knox County Data Library/);
+  assert.match(sent[0].text, /Welcome aboard/);
+  assert.doesNotMatch(sent[0].text, /team@cdl\.org/, 'the answer does not reveal who answered');
+
+  db.requests.push({ slug: 'knox-county', email: 'other@example.org', message: null, requested_at: new Date().toISOString() });
+  const denied = await call('DELETE', '/knox-county/requests/other%40example.org', { user: 'admin', body: { note: 'Not this time' } });
+  assert.equal(denied.status, 200);
+  assert.deepEqual(denied.body.requests, []);
+  assert.equal(denied.body.notified, true);
+  assert.match(sent[1].subject, /Your request to become a co-librarian/);
+  assert.match(sent[1].text, /was declined[\s\S]*Not this time/);
+  assert.deepEqual(db.rows.get('knox-county')!.editors.length, 3, 'denying adds nobody');
+});
+
+test('answers without a note, or without email set up, still work', async () => {
+  const { call, db } = setup();
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: {} });
+  const denied = await call('DELETE', '/knox-county/requests/stranger%40example.org', { user: 'admin' });
+  assert.equal(denied.status, 200);
+  assert.equal(denied.body.notified, false);
+  assert.equal(db.requests.length, 0);
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: {} });
+  assert.equal((await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'editor', body: 'not json' })).status, 400);
+  assert.equal((await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'editor' })).status, 200);
+});
+
+test('admins grant and remove co-librarian rights directly; non-admins who are not editors cannot', async () => {
+  const { call, db } = setup();
+  await call('POST', '/knox-county/requests', { user: 'stranger', body: {} });
+
+  assert.equal((await call('POST', '/knox-county/editors', { user: 'stranger', body: { email: 'friend@example.org' } })).status, 403);
+  assert.equal((await call('DELETE', '/knox-county/editors/helper%40knoxdata.org', { user: 'stranger' })).status, 403);
+  assert.equal((await call('GET', '/knox-county', { user: 'stranger' })).status, 403);
+  assert.equal((await call('POST', '/knox-county/requests/stranger%40example.org/accept', { user: 'stranger' })).status, 403);
+
+  const granted = await call('POST', '/knox-county/editors', { user: 'admin', body: { email: 'Stranger@Example.org' } });
+  assert.equal(granted.status, 201);
+  assert.deepEqual(granted.body.editors, ['librarian@knoxdata.org', 'helper@knoxdata.org', 'stranger@example.org']);
+  assert.equal(db.requests.length, 0, 'a direct grant settles that person’s open request');
+
+  const removed = await call('DELETE', '/knox-county/editors/helper%40knoxdata.org', { user: 'admin' });
+  assert.equal(removed.status, 200);
+  assert.deepEqual(removed.body.editors, ['librarian@knoxdata.org', 'stranger@example.org']);
+  assert.equal((await call('POST', '/anderson/editors', { user: 'admin', body: { email: 'x@y.org' } })).status, 201, 'pending libraries too');
+  assert.equal((await call('DELETE', '/anderson/editors/new%40anderson.org', { user: 'admin' })).status, 200);
+  assert.equal((await call('DELETE', '/anderson/editors/x%40y.org', { user: 'admin' })).status, 409, 'never the last editor');
+  assert.equal((await call('PUT', '/knox-county', { user: 'admin', body: { name: 'Renamed', county_fips: '47093' } })).status, 403, 'admins still cannot edit details');
+});
+
 test('request routes that do not exist', async () => {
   const { call } = setup();
   assert.equal((await call('PUT', '/knox-county/requests', { user: 'editor', body: {} })).status, 405);

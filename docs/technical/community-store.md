@@ -81,9 +81,9 @@ It is safe to re-run: it upserts by slug, keeps an existing approval, and never 
 |---|---|---|
 | Register a library | Anyone logged in | Starts pending; the registrant becomes the first editor |
 | Edit a library | Its editors | The slug never changes; a new county must be in the vocabulary and not taken |
-| Add or remove editors | Its editors | At most 10 editors; never remove the last one |
+| Add or remove editors | Its editors, Identity role `admin` | At most 10 editors; never remove the last one. Admins can do this on any library, to grant or remove co-librarian rights directly |
 | Ask to become a co-librarian | Anyone logged in who isn't an editor | Approved libraries only; one open request each; a note of up to 500 characters; at most 20 open requests per library |
-| Accept or decline a request | Its editors | Accepting makes the requester an editor (the 10-editor limit applies) |
+| Accept or decline a request | Its editors, Identity role `admin` | Accepting makes the requester an editor (the 10-editor limit applies); an optional note of up to 500 characters goes back to the requester |
 | Withdraw a request | The requester | |
 | Approve or reject a pending library | Identity role `admin` | Rejecting deletes the library |
 
@@ -94,16 +94,16 @@ under `/api/librarian/libraries`:
 
 | Method and path | Who | What |
 |---|---|---|
-| `GET /` | logged in | Libraries you edit (+ pending ones for admins) |
+| `GET /` | logged in | Libraries you edit and your open requests. Admins also get pending libraries, every library (`allLibraries`) and every open co-librarian request (`allRequests`) |
 | `POST /` | logged in | Register (pending) |
 | `GET /:slug` | editors, admins | One library with its editors |
 | `PUT /:slug` | editors | Edit |
-| `POST /:slug/editors` | editors | Add an editor `{ email }` |
-| `DELETE /:slug/editors/:email` | editors | Remove an editor |
-| `GET /:slug/requests` | logged in | Editors: open co-librarian requests. Anyone else: the library's name and their own request |
+| `POST /:slug/editors` | editors, admins | Add an editor `{ email }`; settles that person's open request, if any |
+| `DELETE /:slug/editors/:email` | editors, admins | Remove an editor |
+| `GET /:slug/requests` | logged in | Editors and admins: open co-librarian requests. Anyone else: the library's name and their own request |
 | `POST /:slug/requests` | logged in | Ask to become a co-librarian `{ message? }`; emails the editors when Resend is set up |
-| `POST /:slug/requests/:email/accept` | editors | Accept; the requester becomes an editor |
-| `DELETE /:slug/requests/:email` | editors, the requester | Decline someone's request, or withdraw your own |
+| `POST /:slug/requests/:email/accept` | editors, admins | Accept `{ note? }`; the requester becomes an editor |
+| `DELETE /:slug/requests/:email` | editors, admins, the requester | Decline someone's request `{ note? }`, or withdraw your own |
 | `POST /:slug/approve` | admins | Approve |
 | `DELETE /:slug` | admins | Reject a pending library |
 
@@ -125,16 +125,18 @@ under `/api/librarian/libraries`:
 - **Co-librarian requests:** a new request is emailed to the library's editors with the
   requester as Reply-To, using the contact form's `RESEND_API_KEY` and `CONTACT_FROM_EMAIL`. A
   failed or unconfigured email doesn't fail the request; editors also see it on the edit page.
-  Requests never rebuild the site.
+  When a request is accepted or declined, the requester is emailed the answer and the optional
+  note. That email doesn't name or reply to whoever answered, so editors' and admins' emails stay
+  private. Requests never rebuild the site.
 
 ## Pages
 
 | Page | Purpose |
 |---|---|
 | `/librarian/login/` | Log in, create an account, reset a password, and handle the links in Identity emails |
-| `/librarian/` | My libraries; pending approvals for admins |
+| `/librarian/` | My libraries; for admins, pending approvals, every open co-librarian request (approve or deny, with a note) and every library to manage co-librarians on |
 | `/librarian/register/` | Register a library: name, county (searchable list from the vocabulary), place name, web address, description |
-| `/librarian/<slug>/edit/` | Edit details and editors; accept or decline co-librarian requests |
+| `/librarian/<slug>/edit/` | Edit details and editors; accept or decline co-librarian requests. Admins who aren't editors can manage the editors and requests but not the details |
 | `/librarian/join/?slug=<slug>` | Ask to become a co-librarian (linked from each library's contact page, and from the register page when a county is taken) |
 
 - **Public library pages** are `/communities/<slug>/` and `/communities/<slug>/catalog/`. With

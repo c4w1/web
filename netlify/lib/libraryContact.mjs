@@ -41,7 +41,7 @@ export function validateContact({ name, email, message }) {
 
 /**
  * Sends email through Resend's HTTP API (https://resend.com/docs/api-reference/emails/send-email).
- * @returns {(email: { to: string[], replyTo: string, subject: string, text: string }) => Promise<void>}
+ * @returns {(email: { to: string[], replyTo?: string, subject: string, text: string }) => Promise<void>}
  */
 export function createResendSender({ apiKey, from, fetch = globalThis.fetch }) {
   return async ({ to, replyTo, subject, text }) => {

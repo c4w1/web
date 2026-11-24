@@ -36,10 +36,32 @@ import { withBasePath } from '@lib/paths';
     <ul class="item-list" id="pending-list"></ul>
     <p class="note" id="pending-empty" hidden>Nothing is waiting for approval.</p>
   </section>
+
+  <section class="card" id="admin-requests" hidden>
+    <h2>Co-librarian requests</h2>
+    <p class="note">
+      Open requests to become a co-librarian, from every library. Approving makes the person an editor of that library;
+      denying removes the request. A note, if you add one, is emailed to the requester with the answer (when email is
+      set up). The library's own editors can answer these too.
+    </p>
+    <ul class="item-list" id="admin-request-list"></ul>
+    <p class="note" id="admin-request-empty" hidden>No open requests.</p>
+    <p class="field-error" id="admin-request-error" role="alert"></p>
+  </section>
+
+  <section class="card" id="admin-libraries" hidden>
+    <h2>Manage co-librarians</h2>
+    <p class="note">
+      Every library and its editors. Open one to add a co-librarian directly, without a request, or to remove one. A
+      library always keeps at least one editor.
+    </p>
+    <ul class="item-list" id="admin-library-list"></ul>
+  </section>
 </LibrarianPage>
 
 <script>
   import { api, pages, rebuildMessage, requireUser, showStatus } from '@lib/librarian/client';
+  import { requestRow, type JoinRequest } from '@lib/librarian/requestAnswers';
 
   interface Library {
     slug: string;
@@ -98,7 +120,14 @@ import { withBasePath } from '@lib/paths';
   }
 
   async function load() {
-    const data = (await api()) as { libraries: Library[]; pending: Library[]; isAdmin: boolean; requests?: MyRequest[] };
+    const data = (await api()) as {
+      libraries: Library[];
+      pending: Library[];
+      isAdmin: boolean;
+      requests?: MyRequest[];
+      allLibraries?: Library[];
+      allRequests?: JoinRequest[];
+    };
     const list = document.getElementById('library-list')!;
     list.replaceChildren(
       ...data.libraries.map((lib) =>
@@ -146,6 +175,35 @@ import { withBasePath } from '@lib/paths';
       );
       document.getElementById('pending-empty')!.hidden = data.pending.length > 0;
     }
+    renderAdmin(data.isAdmin, data.allRequests ?? [], data.allLibraries ?? []);
+  }
+
+  /** Admins: every open co-librarian request, and every library to grant or remove co-librarians on. */
+  function renderAdmin(isAdmin: boolean, requests: JoinRequest[], libraries: Library[]) {
+    document.getElementById('admin-requests')!.hidden = !isAdmin;
+    document.getElementById('admin-libraries')!.hidden = !isAdmin;
+    if (!isAdmin) return;
+    const requestError = document.getElementById('admin-request-error')!;
+    requestError.textContent = '';
+    document.getElementById('admin-request-list')!.replaceChildren(
+      ...requests.map((req) =>
+        requestRow(req, {
+          slug: req.slug!,
+          acceptLabel: 'Approve',
+          declineLabel: 'Deny',
+          onAnswered: async (result, accepted) => {
+            const sent = result.notified ? ' They were emailed the answer.' : '';
+            showStatus(`${accepted ? 'Approved' : 'Denied'} ${req.email} for ${req.name}.${sent}`);
+            await load();
+          },
+          onError: (text) => (requestError.textContent = text),
+        })
+      )
+    );
+    document.getElementById('admin-request-empty')!.hidden = requests.length > 0;
+    document.getElementById('admin-library-list')!.replaceChildren(
+      ...libraries.map((lib) => item(lib, [link('Manage', pages.edit(lib.slug))]))
+    );
   }
 
   async function init() {

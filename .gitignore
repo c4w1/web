@@ -67,3 +67,7 @@ backend/database/*.db
 
 # Tier 1 previews, copied from the backend at build time (npm run sync:previews)
 public/previews/
+
+# Playwright
+test-results/
+playwright-report/

@@ -58,8 +58,9 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
   <section class="card" id="requests" hidden>
     <h2>Co-librarian requests</h2>
     <p class="note">
-      People who asked to help edit this library. Accepting adds them as an editor; declining removes the request. Reply
-      to the email you got about a request to ask them anything first.
+      People who asked to help edit this library. Accepting adds them as an editor; declining removes the request. A
+      note, if you add one, is emailed to them with the answer. Reply to the email you got about a request to ask them
+      anything first.
     </p>
     <ul class="item-list" id="request-list"></ul>
     <p class="note" id="request-empty">No open requests.</p>
@@ -71,6 +72,7 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
   import { editSlugFromLocation } from '@lib/librarian/portal';
   import { api, ApiError, pages, rebuildMessage, requireUser, showFieldErrors, showStatus } from '@lib/librarian/client';
   import { initCountyPicker } from '@lib/librarian/countyPicker';
+  import { requestRow, type JoinRequest } from '@lib/librarian/requestAnswers';
   import type { User } from '@netlify/identity';
 
   interface Library {
@@ -83,12 +85,6 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     state_code?: string;
     approved: boolean;
     editors: string[];
-  }
-
-  interface JoinRequest {
-    email: string;
-    message: string | null;
-    requested_at: string;
   }
 
   const form = document.getElementById('edit-form') as HTMLFormElement;
@@ -145,37 +141,21 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
   }
 
   function renderRequests(requests: JoinRequest[]) {
+    requestError.textContent = '';
     document.getElementById('request-empty')!.hidden = requests.length > 0;
     document.getElementById('request-list')!.replaceChildren(
-      ...requests.map((req) => {
-        const li = document.createElement('li');
-        const main = document.createElement('div');
-        main.className = 'item-main';
-        main.append(
-          Object.assign(document.createElement('span'), { className: 'item-name', textContent: req.email }),
-          Object.assign(document.createElement('span'), {
-            className: 'item-meta',
-            textContent: `Asked ${new Date(req.requested_at).toLocaleDateString()}${req.message ? `: “${req.message}”` : ''}`,
-          })
-        );
-        const target = `${path}/requests/${encodeURIComponent(req.email)}`;
-        const answer = (accept: boolean) => async () => {
-          requestError.textContent = '';
-          try {
-            const result = await api(accept ? `${target}/accept` : target, { method: accept ? 'POST' : 'DELETE' });
+      ...requests.map((req) =>
+        requestRow(req, {
+          slug: slug!,
+          acceptLabel: 'Accept',
+          declineLabel: 'Decline',
+          onAnswered: (result) => {
             if (result.editors) renderEditors(result.editors);
-            renderRequests(result.requests);
-          } catch (err) {
-            requestError.textContent = message(err);
-          }
-        };
-        const accept = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Accept' });
-        accept.addEventListener('click', answer(true));
-        const decline = Object.assign(document.createElement('button'), { type: 'button', className: 'button-secondary', textContent: 'Decline' });
-        decline.addEventListener('click', answer(false));
-        li.append(main, accept, decline);
-        return li;
-      })
+            renderRequests(result.requests ?? []);
+          },
+          onError: (text) => (requestError.textContent = text),
+        })
+      )
     );
   }
 
@@ -220,19 +200,28 @@ import { LIMITS } from '@lib/community/librarianRules.mjs';
     }
     me = await requireUser();
     if (!me) return;
-    const { library, canEdit, requests } = (await api(path)) as { library: Library; canEdit: boolean; requests?: JoinRequest[] };
+    const { library, canEdit, canManageEditors, requests } = (await api(path)) as {
+      library: Library;
+      canEdit: boolean;
+      canManageEditors?: boolean;
+      requests?: JoinRequest[];
+    };
     fill(library);
     form.hidden = false;
     document.getElementById('editors')!.hidden = false;
-    if (canEdit && library.approved) {
+    if (canManageEditors && library.approved) {
       renderRequests(requests ?? []);
       document.getElementById('requests')!.hidden = false;
     }
     if (!canEdit) {
-      // Admins can look at a library they don't edit, but not change it.
+      // Admins who don't edit this library can manage its editors and requests, but not its details.
       form.querySelectorAll('input, textarea, button').forEach((el) => el.setAttribute('disabled', ''));
-      document.getElementById('add-editor-form')!.hidden = true;
-      showStatus('You can see this library because you approve libraries, but only its editors can change it.');
+      if (!canManageEditors) document.getElementById('add-editor-form')!.hidden = true;
+      showStatus(
+        canManageEditors
+          ? 'You are an admin, not an editor of this library: you can add or remove its co-librarians and answer requests, but only its editors can change its details.'
+          : 'Only this library’s editors can change it.'
+      );
     }
   }
 

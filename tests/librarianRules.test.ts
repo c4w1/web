@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createVocabulary } from '../src/lib/community/geoVocabulary.mjs';
 import {
+  canManageEditors,
   checkAddEditor,
   checkAnswerRequest,
   checkJoinRequest,
@@ -147,6 +148,7 @@ test('editors can add editors; duplicates, bad emails and outsiders are refused'
   assert.equal(checkAddEditor({ editors: knoxEditors, user: editor, email: 'HELPER@knoxdata.org' }).status, 409);
   assert.equal(checkAddEditor({ editors: knoxEditors, user: editor, email: 'not an email' }).status, 400);
   assert.equal(checkAddEditor({ editors: knoxEditors, user: stranger, email: 'x@y.org' }).status, 403);
+  assert.deepEqual(checkAddEditor({ editors: knoxEditors, user: admin, email: 'X@Y.org' }), { ok: true, email: 'x@y.org' }, 'admins grant directly');
   const full = Array.from({ length: 10 }, (_, i) => `e${i}@x.org`);
   assert.equal(checkAddEditor({ editors: full, user: { email: 'e0@x.org' }, email: 'new@x.org' }).status, 400);
 });
@@ -157,6 +159,15 @@ test('editors can remove editors, themselves included, but never the last one', 
   assert.equal(checkRemoveEditor({ editors: ['solo@x.org'], user: { email: 'solo@x.org' }, email: 'solo@x.org' }).status, 409);
   assert.equal(checkRemoveEditor({ editors: knoxEditors, user: editor, email: 'nobody@x.org' }).status, 404);
   assert.equal(checkRemoveEditor({ editors: knoxEditors, user: stranger, email: 'helper@knoxdata.org' }).status, 403);
+  assert.deepEqual(checkRemoveEditor({ editors: knoxEditors, user: admin, email: 'helper@knoxdata.org' }), { ok: true, email: 'helper@knoxdata.org' });
+  assert.equal(checkRemoveEditor({ editors: ['solo@x.org'], user: admin, email: 'solo@x.org' }).status, 409, 'admins keep the last editor too');
+});
+
+test('admins manage any library’s co-librarians; editors and admins only', () => {
+  assert.equal(canManageEditors(knoxEditors, editor), true);
+  assert.equal(canManageEditors(knoxEditors, admin), true);
+  assert.equal(canManageEditors(knoxEditors, stranger), false);
+  assert.equal(canManageEditors(knoxEditors, null), false);
 });
 
 // ── Approval ─────────────────────────────────────────────────
@@ -176,13 +187,15 @@ test('anyone logged in may ask once to join a published library they do not edit
   assert.equal(ask({ requests: flooded }).status, 409, 'too many open requests');
 });
 
-test('only editors accept or decline requests; accepting respects the editor limit', () => {
+test('editors and admins accept or decline requests, with an optional note; accepting respects the editor limit', () => {
   const requests = [{ email: 'stranger@example.org' }];
   const answer = (overrides = {}) =>
     checkAnswerRequest({ editors: knoxEditors, requests, user: editor, email: 'Stranger@Example.org', accept: true, ...overrides });
-  assert.deepEqual(answer(), { ok: true, email: 'stranger@example.org' });
+  assert.deepEqual(answer(), { ok: true, email: 'stranger@example.org', note: null });
+  assert.deepEqual(answer({ note: '  Welcome!  ' }), { ok: true, email: 'stranger@example.org', note: 'Welcome!' });
+  assert.equal(answer({ note: 'x'.repeat(LIMITS.answerNote + 1) }).status, 400);
   assert.equal(answer({ user: stranger }).status, 403);
-  assert.equal(answer({ user: admin }).status, 403, 'admins who are not editors cannot answer');
+  assert.equal(answer({ user: admin }).ok, true, 'admins answer requests for any library');
   assert.equal(answer({ email: 'other@example.org' }).status, 404);
   const full = [editor.email, ...Array.from({ length: LIMITS.editors - 1 }, (_, i) => `e${i}@x.org`)];
   assert.equal(answer({ editors: full }).status, 409);

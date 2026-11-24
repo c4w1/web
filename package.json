@@ -24,7 +24,8 @@
     "test:functions": "node --test \"netlify/**/*.test.mjs\" \"src/lib/editor/*.test.mjs\"",
     "check": "npm run lint && npm test && npm run build",
     "geo:boundaries": "node scripts/build-geo-boundaries.mjs",
-    "db:seed": "node scripts/seed-communities.mjs"
+    "db:seed": "node scripts/seed-communities.mjs",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -63,6 +64,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
