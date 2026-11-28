@@ -1,14 +1,16 @@
 /**
  * Stand-ins for the librarian portal's back end in browser tests:
  *
- * - Netlify Identity: a fake nf_jwt cookie plus answers to the Identity endpoints the
- *   @netlify/identity client calls (/settings and /user), so the pages see a logged-in user.
+ * - Netlify Identity: answers to the endpoints the @netlify/identity client calls
+ *   (/settings, /token, /user, /logout), backed by a list of test accounts, so pages can
+ *   log in and out for real. Tokens are unsigned JWTs: the client only decodes them.
  * - The librarian API: requests to /api/librarian/libraries are answered by the real
  *   handler (netlify/lib/librarianApi.mjs) with the in-memory database the unit tests use,
- *   so the browser exercises the same rules as production.
+ *   so the browser exercises the same rules as production. The API knows who is logged
+ *   in from the nf_jwt cookie, as the deployed function does.
  */
 
-import type { BrowserContext, Page } from '@playwright/test';
+import type { Page, Request as PlaywrightRequest } from '@playwright/test';
 import { createVocabulary } from '../../../src/lib/community/geoVocabulary.mjs';
 import { createLibrarianHandler } from '../../../netlify/lib/librarianApi.mjs';
 import { createMemoryCommunityDb } from '../../support/memoryCommunityDb.mjs';
@@ -22,6 +24,9 @@ export const users = {
   other: { email: 'other@example.org', roles: [] },
   admin: { email: 'team@cdl.org', roles: ['admin'] },
 } satisfies Record<string, TestUser>;
+
+/** Every test account's password (the stand-in Identity accepts only this one). */
+export const PASSWORD = 'correct-horse-battery';
 
 const vocabulary = createVocabulary({
   vintage: 2025,
@@ -43,10 +48,20 @@ export function seedDb() {
         approved: true,
         editors: [users.editor.email, users.helper.email],
       },
-      { slug: 'anderson', name: 'Anderson Library', county_fips: '47001', approved: true, editors: ['new@anderson.org'] },
+      {
+        slug: 'anderson',
+        name: 'Anderson Library',
+        county_fips: '47001',
+        approved: true,
+        editors: ['new@anderson.org'],
+      },
     ],
     [
-      { slug: 'knox-county', email: users.stranger.email, message: 'I teach stats at the high school' },
+      {
+        slug: 'knox-county',
+        email: users.stranger.email,
+        message: 'I teach stats at the high school',
+      },
       { slug: 'knox-county', email: users.other.email },
     ]
   );
@@ -54,54 +69,111 @@ export function seedDb() {
 
 const base64url = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
-/** An unsigned JWT: the client only decodes it, and the stand-in API never sees it. */
-function fakeJwt(user: TestUser) {
+/** An unsigned JWT for `user`: the client only decodes it, and so does the stand-in API. */
+export function fakeJwt(user: TestUser) {
   const exp = Math.floor(Date.now() / 1000) + 3600;
   return `${base64url({ alg: 'HS256', typ: 'JWT' })}.${base64url({ sub: user.email, email: user.email, exp, app_metadata: { roles: user.roles } })}.sig`;
 }
 
-async function logIn(context: BrowserContext, baseURL: string, user: TestUser) {
-  await context.addCookies([{ name: 'nf_jwt', value: fakeJwt(user), url: baseURL }]);
+function emailFromJwt(jwt: string | undefined | null): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(String(jwt).split('.')[1], 'base64url').toString());
+    return typeof payload.email === 'string' ? payload.email : null;
+  } catch {
+    return null;
+  }
 }
 
-async function fakeIdentity(page: Page, user: TestUser) {
-  await page.route('**/.netlify/identity/settings', (route) =>
-    route.fulfill({ json: { autoconfirm: false, disable_signup: false, external: { email: true } } })
-  );
-  await page.route('**/.netlify/identity/user', (route) =>
-    route.fulfill({
-      json: {
-        id: `id-${user.email}`,
-        aud: '',
-        role: '',
-        email: user.email,
-        confirmed_at: '2026-01-01T00:00:00Z',
-        app_metadata: { provider: 'email', roles: user.roles },
-        user_metadata: {},
-      },
-    })
-  );
+function cookie(header: string | undefined, name: string): string | null {
+  for (const part of (header ?? '').split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) return decodeURIComponent(rest.join('='));
+  }
+  return null;
 }
+
+const identityUser = (user: TestUser) => ({
+  id: `id-${user.email}`,
+  aud: '',
+  role: '',
+  email: user.email,
+  confirmed_at: '2026-01-01T00:00:00Z',
+  app_metadata: { provider: 'email', roles: user.roles },
+  user_metadata: {},
+});
 
 /**
- * Log `user` in on `page` and answer the librarian API from `db`. Returns the emails the
- * API would have sent.
+ * Answer Netlify Identity and the librarian API on `page` for `accounts` (all with
+ * PASSWORD). Nobody is logged in until the page logs in, or a test sets the nf_jwt cookie
+ * (see openPortal). Returns the emails the API would have sent.
  */
-export async function openPortal(page: Page, baseURL: string, user: TestUser, db: ReturnType<typeof seedDb>) {
+export async function startBackend(
+  page: Page,
+  db: ReturnType<typeof seedDb>,
+  accounts: TestUser[] = Object.values(users)
+) {
   const sent: { to: string[]; subject: string; text: string }[] = [];
+  const account = (email: string | null) =>
+    accounts.find((a) => a.email === email?.toLowerCase()) ?? null;
+
+  await page.route('**/.netlify/identity/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace(/^.*\/\.netlify\/identity/, '');
+    if (path === '/settings') {
+      return route.fulfill({
+        json: { autoconfirm: false, disable_signup: false, external: { email: true } },
+      });
+    }
+    if (path === '/token' && request.method() === 'POST') {
+      const form = new URLSearchParams(request.postData() ?? '');
+      const user =
+        form.get('grant_type') === 'password' && form.get('password') === PASSWORD
+          ? account(form.get('username'))
+          : null;
+      if (!user) {
+        return route.fulfill({
+          status: 400,
+          json: {
+            error: 'invalid_grant',
+            error_description: 'No user found with that email, or password invalid.',
+          },
+        });
+      }
+      return route.fulfill({
+        json: {
+          access_token: fakeJwt(user),
+          token_type: 'bearer',
+          expires_in: 3600,
+          refresh_token: `refresh-${user.email}`,
+        },
+      });
+    }
+    if (path === '/user') {
+      const bearer = (await request.allHeaders()).authorization?.replace(/^Bearer\s+/i, '');
+      const user = account(emailFromJwt(bearer));
+      return user
+        ? route.fulfill({ json: identityUser(user) })
+        : route.fulfill({ status: 401, json: { msg: 'Invalid token' } });
+    }
+    if (path === '/logout') return route.fulfill({ status: 204, body: '' });
+    return route.fulfill({ status: 404, json: { msg: `No stand-in for ${path}` } });
+  });
+
+  // The deployed function reads the login from the nf_jwt cookie; so does this one.
+  let current: TestUser | null = null;
   const handle = createLibrarianHandler({
-    verifyUser: async () => ({ email: user.email, roles: user.roles }),
+    verifyUser: async () => current,
     db: () => db,
     rebuild: async () => 'skipped',
     vocabulary,
     send: async (email: { to: string[]; subject: string; text: string }) => void sent.push(email),
   });
 
-  await logIn(page.context(), baseURL, user);
-  await fakeIdentity(page, user);
   await page.route('**/api/librarian/libraries**', async (route) => {
-    const request = route.request();
+    const request: PlaywrightRequest = route.request();
     const url = new URL(request.url());
+    const headers = await request.allHeaders();
+    current = account(emailFromJwt(cookie(headers.cookie, 'nf_jwt')));
     const body = request.postData();
     // The page and the API share an origin in production; say so for the write check.
     const response = await handle(
@@ -111,7 +183,27 @@ export async function openPortal(page: Page, baseURL: string, user: TestUser, db
         body: body && !['GET', 'HEAD'].includes(request.method()) ? body : undefined,
       })
     );
-    await route.fulfill({ status: response.status, contentType: 'application/json', body: await response.text() });
+    await route.fulfill({
+      status: response.status,
+      contentType: 'application/json',
+      body: await response.text(),
+    });
   });
   return { sent };
+}
+
+/** `user` already logged in (an nf_jwt cookie, as after a login), with the stand-in back end. */
+export async function openPortal(
+  page: Page,
+  baseURL: string,
+  user: TestUser,
+  db: ReturnType<typeof seedDb>
+) {
+  await page.context().addCookies([{ name: 'nf_jwt', value: fakeJwt(user), url: baseURL }]);
+  return startBackend(page, db);
+}
+
+/** The nf_jwt cookie the browser holds for the site, if any. */
+export async function loginCookie(page: Page, baseURL: string) {
+  return (await page.context().cookies(baseURL)).find((c) => c.name === 'nf_jwt')?.value ?? null;
 }
